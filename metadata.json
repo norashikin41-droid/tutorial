@@ -1,0 +1,8 @@
+{
+  "name": "GCMT 2052 Matematik Ulangkaji Interaktif",
+  "description": "Aplikasi latih tubi ulangkaji interaktif bagi kod subjek Matematik GCMT 2052 lengkap mengikut sukatan rasmi 10 unit, semakan jawapan segera, analisis prestasi setiap topik, mod cabaran masa, buku rumus rasmi, serta penjanaan sijil pencapaian unit (dengan nama penuh, nombor matrik, markah, dan muat turun PNG/PDF).",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
