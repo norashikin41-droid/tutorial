@@ -103,15 +103,21 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
         <div className="relative z-10">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
             <div>
-              <div className="flex items-center space-x-2 mb-1.5">
+              <div className="flex flex-wrap items-center gap-2 mb-1.5">
                 <span className="text-xs font-bold uppercase tracking-wider px-3 py-0.5 rounded-full bg-[#A3AD94]/30 text-[#D8E2CD] border border-[#A3AD94]/40">
                   Laporan Kemajuan Peribadi
                 </span>
                 <span className="text-xs text-[#C8C8B8]">GCMT 2052</span>
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/10 text-[#E0E0D0] border border-white/15">
+                  ILKKM Sungai Buloh
+                </span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
-                Analisis Prestasi & Penguasaan Topik
+                Analisis Prestasi: {userProfile.name}
               </h2>
+              <p className="text-xs text-[#C8C8B8] mt-1">
+                No. Matrik: <span className="font-mono font-semibold text-white">{userProfile.matricNumber || 'Belum disahkan'}</span> • {userProfile.institution || 'Institut Latihan Kementerian Kesihatan Malaysia Sungai Buloh'}
+              </p>
             </div>
 
             <div className="flex items-center space-x-3">

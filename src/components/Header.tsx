@@ -8,16 +8,21 @@ import {
   Bell, 
   Bookmark, 
   CheckCircle2,
-  GraduationCap
+  GraduationCap,
+  ShieldCheck,
+  Lock,
+  KeyRound
 } from 'lucide-react';
-import { UserProfile } from '../types';
+import { UserProfile, MatricAuthSession } from '../types';
 
 interface HeaderProps {
   activeTab: 'topics' | 'challenge' | 'dashboard' | 'formulas' | 'bookmarks';
   setActiveTab: (tab: 'topics' | 'challenge' | 'dashboard' | 'formulas' | 'bookmarks') => void;
   userProfile: UserProfile;
+  matricSession: MatricAuthSession;
   onOpenReminderModal: () => void;
   onOpenCertificate: () => void;
+  onOpenMatricModal: () => void;
   bookmarkedCount: number;
 }
 
@@ -25,8 +30,10 @@ export const Header: React.FC<HeaderProps> = ({
   activeTab,
   setActiveTab,
   userProfile,
+  matricSession,
   onOpenReminderModal,
   onOpenCertificate,
+  onOpenMatricModal,
   bookmarkedCount,
 }) => {
   const masteryPercentage = Math.round(
@@ -59,6 +66,35 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Quick Stats & Utilities */}
           <div className="flex items-center space-x-2 sm:space-x-3">
             
+            {/* Matric Auth Status Button */}
+            <button
+              id="header-matric-auth-btn"
+              onClick={onOpenMatricModal}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-2xl border text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer ${
+                matricSession.isVerified && matricSession.matricNumber
+                  ? 'bg-[#EBF0E6] border-[#C8D6C4] text-[#33422C] hover:bg-[#DCE7D6]'
+                  : 'bg-[#FDF5F2] border-[#EBD0C6] text-[#8E472D] hover:bg-[#FBE8E1]'
+              }`}
+              title={
+                matricSession.isVerified && matricSession.matricNumber
+                  ? `Pelatih Disahkan: ${matricSession.matricNumber} (${matricSession.studentName})`
+                  : 'Klik untuk sahkan Nombor Matrik ILKKM Sungai Buloh'
+              }
+            >
+              {matricSession.isVerified && matricSession.matricNumber ? (
+                <>
+                  <ShieldCheck className="w-4 h-4 text-[#495E3F]" />
+                  <span className="hidden sm:inline font-mono">{matricSession.matricNumber}</span>
+                  <span className="sm:hidden font-mono">Disahkan</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-4 h-4 text-[#D98C70]" />
+                  <span>Sahkan Matrik</span>
+                </>
+              )}
+            </button>
+
             {/* Streak Counter */}
             <div 
               className="flex items-center space-x-1.5 px-3 py-1.5 rounded-2xl bg-[#FBF1EC] border border-[#EBD0C6] text-[#8E472D] text-xs sm:text-sm font-semibold shadow-xs"

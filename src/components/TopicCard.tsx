@@ -15,7 +15,8 @@ import {
   TrendingUp,
   Activity,
   Box,
-  Triangle
+  Triangle,
+  Lock
 } from 'lucide-react';
 import { TopicInfo, UserProfile } from '../types';
 import { topicQuestionMap } from '../data/topics';
@@ -24,6 +25,7 @@ interface TopicCardProps {
   topic: TopicInfo;
   userProfile: UserProfile;
   onStartQuiz: (topicId: number, mode: 'practice' | 'timed') => void;
+  isVerified?: boolean;
 }
 
 const iconComponents: Record<string, React.ReactNode> = {
@@ -43,6 +45,7 @@ export const TopicCard: React.FC<TopicCardProps> = ({
   topic,
   userProfile,
   onStartQuiz,
+  isVerified = true,
 }) => {
   const questions = topicQuestionMap[topic.id] || [];
   const topicQuestionIds = questions.map((q) => q.id);
@@ -80,9 +83,20 @@ export const TopicCard: React.FC<TopicCardProps> = ({
               </h3>
             </div>
           </div>
-          <span className="shrink-0 text-xs font-semibold px-3 py-1 rounded-full bg-[#F5F5F0] text-[#5A5A50] border border-[#E0E0D0]">
-            {topic.totalQuestions} Soalan
-          </span>
+          {isVerified ? (
+            <span className="shrink-0 text-xs font-semibold px-3 py-1 rounded-full bg-[#F5F5F0] text-[#5A5A50] border border-[#E0E0D0]">
+              {topic.totalQuestions} Soalan
+            </span>
+          ) : (
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FDF5F2] text-[#8E472D] border border-[#EBD0C6] flex items-center gap-1">
+                <Lock className="w-2.5 h-2.5" /> Akses Terhad
+              </span>
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#F5F5F0] text-[#5A5A50] border border-[#E0E0D0]">
+                {topic.totalQuestions} Soalan
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Short Topic Description */}
@@ -137,17 +151,21 @@ export const TopicCard: React.FC<TopicCardProps> = ({
         <button
           id={`btn-practice-topic-${topic.id}`}
           onClick={() => onStartQuiz(topic.id, 'practice')}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-2xl bg-[#A3AD94] hover:bg-[#8F9A7F] text-white text-xs sm:text-sm font-semibold transition-colors shadow-xs"
+          className={`flex-1 inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-2xl text-xs sm:text-sm font-semibold transition-colors shadow-xs ${
+            isVerified
+              ? 'bg-[#A3AD94] hover:bg-[#8F9A7F] text-white'
+              : 'bg-[#5A5A50] hover:bg-[#4A4A40] text-white'
+          }`}
         >
-          <Play className="w-4 h-4 fill-white" />
-          <span>Ulangkaji & Semak</span>
+          {isVerified ? <Play className="w-4 h-4 fill-white" /> : <Lock className="w-4 h-4" />}
+          <span>{isVerified ? 'Ulangkaji & Semak' : 'Buka Soalan (No. Matrik)'}</span>
         </button>
 
         <button
           id={`btn-timed-topic-${topic.id}`}
           onClick={() => onStartQuiz(topic.id, 'timed')}
           className="inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-2xl bg-[#FBF1EC] hover:bg-[#F5E2DA] text-[#A35C42] text-xs sm:text-sm font-semibold transition-colors border border-[#EBD0C6]"
-          title="Cabaran Masa untuk topik ini"
+          title="Ujian Pantas untuk topik ini"
         >
           <Clock className="w-4 h-4 text-[#D98C70]" />
           <span className="hidden sm:inline">Ujian Pantas</span>

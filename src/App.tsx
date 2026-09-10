@@ -11,6 +11,8 @@ import { SpeedChallengeModal } from './components/SpeedChallengeModal';
 import { ReminderModal } from './components/ReminderModal';
 import { BookmarksView } from './components/BookmarksView';
 import { CertificateModal } from './components/CertificateModal';
+import { MatricAuthModal } from './components/MatricAuthModal';
+import { MatricLockBanner } from './components/MatricLockBanner';
 
 import { allTopics, topicQuestionMap, allQuestions } from './data/topics';
 import { 
@@ -24,8 +26,9 @@ import {
   saveReminderSettings,
   resetAllProgress 
 } from './utils/storage';
+import { getMatricSession } from './utils/matricAuth';
 import { checkAndTriggerDailyReminder } from './utils/notification';
-import { Question, QuizAttempt, UserProfile, ReminderSettings } from './types';
+import { Question, QuizAttempt, UserProfile, ReminderSettings, MatricAuthSession } from './types';
 import { 
   Search, 
   Sparkles, 
@@ -34,12 +37,17 @@ import {
   BookOpen, 
   BarChart3, 
   ArrowRight,
-  Calculator
+  Calculator,
+  Lock
 } from 'lucide-react';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<'topics' | 'challenge' | 'dashboard' | 'formulas' | 'bookmarks'>('topics');
   const [userProfile, setUserProfile] = useState<UserProfile>(getStoredProfile());
+  const [matricSession, setMatricSession] = useState<MatricAuthSession>(getMatricSession());
+  const [isMatricAuthOpen, setIsMatricAuthOpen] = useState(false);
+  const [authRequiredAction, setAuthRequiredAction] = useState<string | null>(null);
+
   const [attempts, setAttempts] = useState<QuizAttempt[]>(getStoredAttempts());
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>(getBookmarkedQuestionIds());
   const [reminderSettings, setReminderSettings] = useState<ReminderSettings>(getReminderSettings());
@@ -67,10 +75,19 @@ export function App() {
     checkAndTriggerDailyReminder();
   }, []);
 
+  const isVerifiedStudent = matricSession.isVerified && !!matricSession.matricNumber;
+
   const handleStartTopicQuiz = (topicId: number, mode: 'practice' | 'timed') => {
     const topic = allTopics.find((t) => t.id === topicId);
     const questions = topicQuestionMap[topicId] || [];
     if (!topic || questions.length === 0) return;
+
+    // Hadkan akses: Pastikan pelatih disahkan dengan no matrik ILKKM Sungai Buloh
+    if (!isVerifiedStudent) {
+      setAuthRequiredAction(`Akses Soalan Unit ${topic.id} (${topic.code}: ${topic.title})`);
+      setIsMatricAuthOpen(true);
+      return;
+    }
 
     // Untuk mod ujian pantas (timed), masa dikira: bilangan soalan × 1.5 minit
     const timeLimit = Math.round(questions.length * 1.5 * 10) / 10;
@@ -90,6 +107,12 @@ export function App() {
     title: string, 
     durationMinutes: number
   ) => {
+    if (!isVerifiedStudent) {
+      setAuthRequiredAction('Mod Ujian Pantas ⚡');
+      setIsMatricAuthOpen(true);
+      return;
+    }
+
     setActiveQuiz({
       questions: selectedQuestions,
       topicTitle: title,
@@ -100,6 +123,12 @@ export function App() {
   };
 
   const handleStartBookmarkQuiz = (questions: Question[]) => {
+    if (!isVerifiedStudent) {
+      setAuthRequiredAction('Latihan Soalan Ditanda');
+      setIsMatricAuthOpen(true);
+      return;
+    }
+
     setActiveQuiz({
       questions,
       topicTitle: `Latihan Soalan Ditanda (${questions.length} Soalan)`,
@@ -148,10 +177,15 @@ export function App() {
           setLatestAttempt(null);
         }}
         userProfile={userProfile}
+        matricSession={matricSession}
         onOpenReminderModal={() => setIsReminderOpen(true)}
         onOpenCertificate={() => {
           setSelectedCertUnitId(1);
           setIsCertificateOpen(true);
+        }}
+        onOpenMatricModal={() => {
+          setAuthRequiredAction(null);
+          setIsMatricAuthOpen(true);
         }}
         bookmarkedCount={bookmarkedIds.length}
       />
@@ -210,6 +244,15 @@ export function App() {
         {!activeQuiz && !latestAttempt && activeTab === 'topics' && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-in fade-in duration-200">
             
+            {/* Security Access Banner */}
+            <MatricLockBanner 
+              session={matricSession} 
+              onOpenAuthModal={() => {
+                setAuthRequiredAction(null);
+                setIsMatricAuthOpen(true);
+              }} 
+            />
+
             {/* Hero Revision Banner */}
             <div className="bg-[#4A4A40] rounded-[32px] p-7 sm:p-10 text-[#FAF9F5] shadow-md mb-8 relative overflow-hidden border border-[#3E3E36]">
               <div className="relative z-10 max-w-3xl">
@@ -231,7 +274,7 @@ export function App() {
                 <div className="flex flex-wrap items-center gap-3">
                   <button
                     onClick={() => setActiveTab('challenge')}
-                    className="flex items-center space-x-2 px-6 py-3.5 rounded-2xl bg-[#D98C70] hover:bg-[#C7795C] text-white font-bold text-xs sm:text-sm transition-all shadow-sm"
+                    className="flex items-center space-x-2 px-6 py-3.5 rounded-2xl bg-[#D98C70] hover:bg-[#C7795C] text-white font-bold text-xs sm:text-sm transition-all shadow-sm cursor-pointer"
                   >
                     <Clock className="w-4 h-4" />
                     <span>Mula Ujian Pantas ⚡ (1.5 Min/Soalan)</span>
@@ -239,7 +282,7 @@ export function App() {
 
                   <button
                     onClick={() => setActiveTab('formulas')}
-                    className="flex items-center space-x-2 px-6 py-3.5 rounded-2xl bg-[#5A5A50] hover:bg-[#68685C] text-white font-semibold text-xs sm:text-sm transition-all border border-[#707062]"
+                    className="flex items-center space-x-2 px-6 py-3.5 rounded-2xl bg-[#5A5A50] hover:bg-[#68685C] text-white font-semibold text-xs sm:text-sm transition-all border border-[#707062] cursor-pointer"
                   >
                     <BookOpen className="w-4 h-4" />
                     <span>Lihat Formula Rasmi</span>
@@ -280,6 +323,7 @@ export function App() {
                   topic={topic}
                   userProfile={userProfile}
                   onStartQuiz={handleStartTopicQuiz}
+                  isVerified={isVerifiedStudent}
                 />
               ))}
             </div>
@@ -288,9 +332,19 @@ export function App() {
 
         {/* VIEW 4: Speed Challenge Mode */}
         {!activeQuiz && !latestAttempt && activeTab === 'challenge' && (
-          <SpeedChallengeModal
-            onStartChallenge={handleStartCustomChallenge}
-          />
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <MatricLockBanner 
+              session={matricSession} 
+              onOpenAuthModal={() => {
+                setAuthRequiredAction('Mod Ujian Pantas ⚡');
+                setIsMatricAuthOpen(true);
+              }} 
+            />
+            <SpeedChallengeModal
+              onStartChallenge={handleStartCustomChallenge}
+              isVerified={isVerifiedStudent}
+            />
+          </div>
         )}
 
         {/* VIEW 5: Performance Dashboard */}
@@ -314,11 +368,21 @@ export function App() {
 
         {/* VIEW 7: Bookmarks View */}
         {!activeQuiz && !latestAttempt && activeTab === 'bookmarks' && (
-          <BookmarksView
-            bookmarkedIds={bookmarkedIds}
-            onToggleBookmark={handleToggleBookmark}
-            onStartBookmarkQuiz={handleStartBookmarkQuiz}
-          />
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <MatricLockBanner 
+              session={matricSession} 
+              onOpenAuthModal={() => {
+                setAuthRequiredAction('Latihan Soalan Ditanda');
+                setIsMatricAuthOpen(true);
+              }} 
+            />
+            <BookmarksView
+              bookmarkedIds={bookmarkedIds}
+              onToggleBookmark={handleToggleBookmark}
+              onStartBookmarkQuiz={handleStartBookmarkQuiz}
+              isVerified={isVerifiedStudent}
+            />
+          </div>
         )}
       </main>
 
@@ -347,8 +411,23 @@ export function App() {
           setUserProfile(updated);
         }}
       />
+
+      {/* Matric Authentication & Verification Modal */}
+      <MatricAuthModal
+        isOpen={isMatricAuthOpen}
+        onClose={() => {
+          setIsMatricAuthOpen(false);
+          setAuthRequiredAction(null);
+        }}
+        onAuthSuccess={(session) => {
+          setMatricSession(session);
+          setUserProfile(getStoredProfile());
+        }}
+        requiredForAction={authRequiredAction}
+      />
     </div>
   );
 }
 
 export default App;
+

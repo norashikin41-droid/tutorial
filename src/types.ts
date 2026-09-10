@@ -79,3 +79,21 @@ export interface UnitCertificateInfo {
   completedDate: string;
   certificateId: string;
 }
+
+export interface RegisteredTrainee {
+  matricNumber: string;
+  fullName: string;
+  programme: string;
+  institution: string;
+  cohort: string;
+  registrationDate: string;
+  status: 'Aktif' | 'Digantung';
+}
+
+export interface MatricAuthSession {
+  isVerified: boolean;
+  matricNumber: string | null;
+  studentName: string | null;
+  programme: string | null;
+  verifiedAt: string | null;
+}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bookmark, Play, CheckCircle2, XCircle, Trash2, ArrowRight } from 'lucide-react';
+import { Bookmark, Play, CheckCircle2, XCircle, Trash2, ArrowRight, Lock } from 'lucide-react';
 import { Question } from '../types';
 import { allQuestions } from '../data/topics';
 
@@ -7,12 +7,14 @@ interface BookmarksViewProps {
   bookmarkedIds: string[];
   onToggleBookmark: (questionId: string) => void;
   onStartBookmarkQuiz: (questions: Question[]) => void;
+  isVerified?: boolean;
 }
 
 export const BookmarksView: React.FC<BookmarksViewProps> = ({
   bookmarkedIds,
   onToggleBookmark,
   onStartBookmarkQuiz,
+  isVerified = true,
 }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -41,10 +43,12 @@ export const BookmarksView: React.FC<BookmarksViewProps> = ({
         {bookmarkedQuestions.length > 0 && (
           <button
             onClick={() => onStartBookmarkQuiz(bookmarkedQuestions)}
-            className="flex items-center space-x-2 px-6 py-3 rounded-2xl bg-[#D98C70] hover:bg-[#C7795C] text-white font-bold text-sm transition-all shadow-xs"
+            className={`flex items-center space-x-2 px-6 py-3 rounded-2xl text-white font-bold text-sm transition-all shadow-xs cursor-pointer ${
+              isVerified ? 'bg-[#D98C70] hover:bg-[#C7795C]' : 'bg-[#5A5A50] hover:bg-[#4A4A40]'
+            }`}
           >
-            <Play className="w-4 h-4 fill-white" />
-            <span>Mula Latihan Soalan Ditanda</span>
+            {isVerified ? <Play className="w-4 h-4 fill-white" /> : <Lock className="w-4 h-4" />}
+            <span>{isVerified ? 'Mula Latihan Soalan Ditanda' : 'Buka Latihan (Perlu No. Matrik)'}</span>
           </button>
         )}
       </div>

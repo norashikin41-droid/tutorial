@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
-import { Clock, Zap, Target, BookOpen, Play, CheckCircle2, Calculator, Sparkles } from 'lucide-react';
+import { Clock, Zap, Target, BookOpen, Play, CheckCircle2, Calculator, Sparkles, Lock } from 'lucide-react';
 import { allTopics, allQuestions, topicQuestionMap } from '../data/topics';
 import { Question } from '../types';
 
 interface SpeedChallengeModalProps {
   onStartChallenge: (selectedQuestions: Question[], title: string, durationMinutes: number) => void;
+  isVerified?: boolean;
 }
 
-export const SpeedChallengeModal: React.FC<SpeedChallengeModalProps> = ({ onStartChallenge }) => {
+export const SpeedChallengeModal: React.FC<SpeedChallengeModalProps> = ({ 
+  onStartChallenge,
+  isVerified = true 
+}) => {
   const [selectedTopicIds, setSelectedTopicIds] = useState<number[]>([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   const [questionCount, setQuestionCount] = useState<number>(15);
   const [isCustomCount, setIsCustomCount] = useState<boolean>(false);
@@ -231,10 +235,18 @@ export const SpeedChallengeModal: React.FC<SpeedChallengeModalProps> = ({ onStar
           <button
             id="btn-start-speed-challenge"
             onClick={handleStart}
-            className="flex items-center space-x-2 px-8 py-3.5 rounded-2xl bg-[#D98C70] hover:bg-[#C7795C] text-white font-bold text-sm sm:text-base transition-all shadow-xs cursor-pointer"
+            className={`flex items-center space-x-2 px-8 py-3.5 rounded-2xl text-white font-bold text-sm sm:text-base transition-all shadow-xs cursor-pointer ${
+              isVerified
+                ? 'bg-[#D98C70] hover:bg-[#C7795C]'
+                : 'bg-[#5A5A50] hover:bg-[#4A4A40]'
+            }`}
           >
-            <Play className="w-5 h-5 fill-white" />
-            <span>Mula Ujian Pantas ({calculatedDurationMinutes} Min)</span>
+            {isVerified ? <Play className="w-5 h-5 fill-white" /> : <Lock className="w-5 h-5" />}
+            <span>
+              {isVerified
+                ? `Mula Ujian Pantas (${calculatedDurationMinutes} Min)`
+                : `Buka Ujian Pantas (Perlu No. Matrik)`}
+            </span>
           </button>
         </div>
       </div>
