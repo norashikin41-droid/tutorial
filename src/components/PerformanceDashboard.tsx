@@ -115,8 +115,14 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
               <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
                 Analisis Prestasi: {userProfile.name}
               </h2>
-              <p className="text-xs text-[#C8C8B8] mt-1">
-                No. Matrik: <span className="font-mono font-semibold text-white">{userProfile.matricNumber || 'Belum disahkan'}</span> • {userProfile.institution || 'Institut Latihan Kementerian Kesihatan Malaysia Sungai Buloh'}
+              <p className="text-xs text-[#C8C8B8] mt-1 flex flex-wrap items-center gap-2">
+                {userProfile.icNumber && (
+                  <span>No. K/P: <span className="font-mono font-semibold text-white">{userProfile.icNumber}</span></span>
+                )}
+                {userProfile.matricNumber && (
+                  <span>• Matrik: <span className="font-mono font-semibold text-white">{userProfile.matricNumber}</span></span>
+                )}
+                <span>• {userProfile.programme || 'ILKKM Sungai Buloh'}</span>
               </p>
             </div>
 

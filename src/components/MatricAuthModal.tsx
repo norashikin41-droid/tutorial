@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   ShieldCheck, 
   ShieldAlert, 
@@ -10,19 +10,30 @@ import {
   Search, 
   X, 
   KeyRound, 
-  Building2, 
   LogOut,
   ArrowRight,
   UserPlus,
   FileText,
   Trash2,
   Copy,
-  RefreshCw,
   Settings,
-  ListPlus
+  Upload,
+  Download,
+  CreditCard,
+  User,
+  GraduationCap,
+  BarChart3,
+  Eye,
+  Award,
+  Calendar,
+  Clock,
+  Printer,
+  ChevronRight,
+  Sparkles,
+  Check
 } from 'lucide-react';
 import { 
-  verifyAndLoginMatric, 
+  verifyAndLoginTrainee, 
   getRegisteredTrainees, 
   logoutMatricSession,
   getMatricSession,
@@ -30,12 +41,21 @@ import {
   verifyOwnerPassword,
   updateOwnerPassword,
   addTraineeByOwner,
+  importTraineesFromCsvData,
   batchImportTraineesByOwner,
   deleteTraineeByOwner,
   toggleTraineeStatusByOwner,
-  resetRegisteredTraineesToDefault
+  resetRegisteredTraineesToDefault,
+  exportTraineesToCsv,
+  formatIcNumber,
+  loginAsTraineeDirectly
 } from '../utils/matricAuth';
-import { MatricAuthSession, RegisteredTrainee } from '../types';
+import { 
+  getAllTraineeAssessments, 
+  resetSingleTraineeAssessment, 
+  exportAssessmentReportToCsv 
+} from '../utils/assessmentStorage';
+import { MatricAuthSession, RegisteredTrainee, TraineeAssessmentSummary } from '../types';
 
 interface MatricAuthModalProps {
   isOpen: boolean;
@@ -52,38 +72,47 @@ export const MatricAuthModal: React.FC<MatricAuthModalProps> = ({
 }) => {
   const [mainTab, setMainTab] = useState<'student' | 'owner'>('student');
   
-  // Student verification states
-  const [studentMatric, setStudentMatric] = useState('');
+  // Student verification states (No Kad Pengenalan & Nama Penuh)
+  const [studentIc, setStudentIc] = useState('');
+  const [studentName, setStudentName] = useState('');
   const [studentError, setStudentError] = useState<string | null>(null);
   const [studentSuccess, setStudentSuccess] = useState<string | null>(null);
+  const [showQuickSelect, setShowQuickSelect] = useState(false);
+  const [quickSearch, setQuickSearch] = useState('');
 
   // Owner authentication states
   const [isOwnerUnlocked, setIsOwnerUnlocked] = useState(false);
   const [ownerPasswordInput, setOwnerPasswordInput] = useState('');
   const [ownerAuthError, setOwnerAuthError] = useState<string | null>(null);
 
-  // Owner panel sub-tabs
-  const [ownerSubTab, setOwnerSubTab] = useState<'batch' | 'single' | 'list' | 'settings'>('batch');
+  // Owner panel sub-tabs (Default ke 'monitor' untuk memantau pelatih yang dinilai)
+  const [ownerSubTab, setOwnerSubTab] = useState<'monitor' | 'list' | 'upload' | 'single' | 'settings'>('monitor');
+  const [monitorFilter, setMonitorFilter] = useState<'all' | 'evaluated' | 'unevaluated' | 'gradeA'>('all');
+  const [monitorSearch, setMonitorSearch] = useState('');
+  const [selectedTraineeTranscript, setSelectedTraineeTranscript] = useState<TraineeAssessmentSummary | null>(null);
+  const [switchFeedback, setSwitchFeedback] = useState<string | null>(null);
 
-  // Owner batch import states
-  const [batchText, setBatchText] = useState('');
-  const [batchDefaultProgramme, setBatchDefaultProgramme] = useState('Diploma Farmasi');
-  const [batchResult, setBatchResult] = useState<{
+  // CSV file upload / text paste states
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [csvUploadReplace, setCsvUploadReplace] = useState(true);
+  const [rawCsvText, setRawCsvText] = useState('');
+  const [uploadFeedback, setUploadFeedback] = useState<{
     success: boolean;
+    totalParsed: number;
     addedCount: number;
     duplicateCount: number;
-    invalidCount: number;
     message: string;
   } | null>(null);
 
   // Owner single add states
+  const [singleIc, setSingleIc] = useState('');
+  const [singleFullName, setSingleFullName] = useState('');
   const [singleMatric, setSingleMatric] = useState('');
-  const [singleName, setSingleName] = useState('');
   const [singleProg, setSingleProg] = useState('Diploma Farmasi');
   const [singleCohort, setSingleCohort] = useState('Sesi 2026/2027');
   const [singleMsg, setSingleMsg] = useState<{ success: boolean; text: string } | null>(null);
 
-  // Owner list search state
+  // Owner roster search state
   const [rosterSearch, setRosterSearch] = useState('');
   const [copyFeedback, setCopyFeedback] = useState(false);
 
@@ -97,16 +126,17 @@ export const MatricAuthModal: React.FC<MatricAuthModalProps> = ({
 
   const currentSession = getMatricSession();
   const registeredList = getRegisteredTrainees();
+  const traineeAssessments = getAllTraineeAssessments();
 
   if (!isOpen) return null;
 
-  // Pelatih submit no matrik
+  // Pelatih submit Nombor Kad Pengenalan & Nama Penuh
   const handleStudentLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setStudentError(null);
     setStudentSuccess(null);
 
-    const res = verifyAndLoginMatric(studentMatric);
+    const res = verifyAndLoginTrainee(studentIc, studentName);
     if (res.success && res.trainee) {
       setStudentSuccess(res.message);
       setTimeout(() => {
@@ -120,10 +150,13 @@ export const MatricAuthModal: React.FC<MatricAuthModalProps> = ({
   };
 
   // Ujian pantas pelatih daripada senarai
-  const handleQuickSelectTrainee = (matric: string) => {
-    setStudentMatric(matric);
+  const handleSelectQuickTrainee = (trainee: RegisteredTrainee) => {
+    setStudentIc(trainee.icNumber);
+    setStudentName(trainee.fullName);
     setStudentError(null);
-    const res = verifyAndLoginMatric(matric);
+    setShowQuickSelect(false);
+
+    const res = verifyAndLoginTrainee(trainee.icNumber, trainee.fullName);
     if (res.success && res.trainee) {
       setStudentSuccess(res.message);
       setTimeout(() => {
@@ -144,7 +177,19 @@ export const MatricAuthModal: React.FC<MatricAuthModalProps> = ({
     refreshData();
   };
 
-  // Owner log masuk
+  // Pengajar bertukar / log masuk terus sebagai pelatih tertentu
+  const handleSwitchToTrainee = (trainee: RegisteredTrainee) => {
+    const session = loginAsTraineeDirectly(trainee);
+    onAuthSuccess(session);
+    setSwitchFeedback(`Berjaya bertukar ke sesi pelatih: ${trainee.fullName}.`);
+    refreshData();
+    setTimeout(() => {
+      setSwitchFeedback(null);
+      onClose();
+    }, 900);
+  };
+
+  // Owner log masuk (Kata laluan 200810)
   const handleOwnerUnlock = (e: React.FormEvent) => {
     e.preventDefault();
     setOwnerAuthError(null);
@@ -153,68 +198,146 @@ export const MatricAuthModal: React.FC<MatricAuthModalProps> = ({
       setIsOwnerUnlocked(true);
       setOwnerPasswordInput('');
     } else {
-      setOwnerAuthError('Kata laluan Owner tidak tepat. Sila hubungi pentadbir ILKKM Sungai Buloh.');
+      setOwnerAuthError('Kata laluan Pengajar tidak tepat. Sila hubungi Puan Norashikin Bt M Noor Arzmi.');
     }
   };
 
-  // Owner import pukal
-  const handleBatchImportSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setBatchResult(null);
+  // Pengendali muat naik fail CSV fizikal (MAKLUMAT PELATIH.csv)
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    const res = batchImportTraineesByOwner(batchText, batchDefaultProgramme);
-    setBatchResult(res);
-    if (res.success) {
-      setBatchText('');
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (!content) {
+        setUploadFeedback({
+          success: false,
+          totalParsed: 0,
+          addedCount: 0,
+          duplicateCount: 0,
+          message: 'Gagal membaca fail CSV atau fail kosong.',
+        });
+        return;
+      }
+
+      const result = importTraineesFromCsvData(content, csvUploadReplace);
+      setUploadFeedback(result);
       refreshData();
-    }
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    reader.onerror = () => {
+      setUploadFeedback({
+        success: false,
+        totalParsed: 0,
+        addedCount: 0,
+        duplicateCount: 0,
+        message: 'Ralat teknikal semasa membaca fail CSV.',
+      });
+    };
+
+    reader.readAsText(file, 'UTF-8');
   };
 
-  // Owner tambah pelatih tunggal
+  // Pengendali tampal CSV teks
+  const handlePasteCsvSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rawCsvText.trim()) return;
+
+    const result = importTraineesFromCsvData(rawCsvText, csvUploadReplace);
+    setUploadFeedback(result);
+    if (result.success) {
+      setRawCsvText('');
+    }
+    refreshData();
+  };
+
+  // Pengendali tambah individu
   const handleSingleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSingleMsg(null);
 
     const res = addTraineeByOwner({
-      matricNumber: singleMatric,
-      fullName: singleName,
+      icNumber: singleIc,
+      fullName: singleFullName,
+      matricNumber: singleMatric || undefined,
       programme: singleProg,
       cohort: singleCohort,
     });
 
     setSingleMsg({ success: res.success, text: res.message });
     if (res.success) {
+      setSingleIc('');
+      setSingleFullName('');
       setSingleMatric('');
-      setSingleName('');
       refreshData();
     }
   };
 
   // Owner padam pelatih
-  const handleDeleteTrainee = (matricNumber: string, name: string) => {
+  const handleDeleteTrainee = (icNumber: string, name: string) => {
     const confirmDelete = window.confirm(
-      `Adakah anda pasti ingin memadam pelatih:\n${name} (${matricNumber}) daripada senarai berdaftar ILKKM Sungai Buloh?`
+      `Adakah anda pasti ingin memadam pelatih:\n${name} (No. K/P: ${icNumber})\ndaripada senarai berdaftar ILKKM Sungai Buloh?`
     );
     if (!confirmDelete) return;
 
-    deleteTraineeByOwner(matricNumber);
+    deleteTraineeByOwner(icNumber);
     refreshData();
   };
 
   // Owner tukar status aktif/gantung
-  const handleToggleStatus = (matricNumber: string) => {
-    toggleTraineeStatusByOwner(matricNumber);
+  const handleToggleStatus = (icNumber: string) => {
+    toggleTraineeStatusByOwner(icNumber);
     refreshData();
   };
 
-  // Salin senarai matrik ke clipboard
-  const handleCopyAllMatrics = () => {
+  // Salin senarai ke clipboard
+  const handleCopyAllTrainees = () => {
     const text = registeredList
-      .map((t) => `${t.matricNumber} - ${t.fullName} (${t.programme})`)
+      .map((t, i) => `${i + 1}. ${t.icNumber} - ${t.fullName} (${t.programme})`)
       .join('\n');
     navigator.clipboard.writeText(text);
     setCopyFeedback(true);
     setTimeout(() => setCopyFeedback(false), 2000);
+  };
+
+  // Muat turun fail CSV maklumat pelatih
+  const handleDownloadCsv = () => {
+    const csvData = exportTraineesToCsv();
+    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `MAKLUMAT_PELATIH_ILKKMSB_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Muat turun laporan markah penilaian
+  const handleDownloadAssessmentCsv = () => {
+    const csvData = exportAssessmentReportToCsv();
+    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `LAPORAN_PENILAIAN_GCMT2052_ILKKMSB_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Padam / Set semula markah penilaian seorang pelatih
+  const handleResetTraineeScore = (icNumber: string, name: string) => {
+    const confirmReset = window.confirm(`Set semula semua rekod dan markah penilaian bagi ${name}?`);
+    if (!confirmReset) return;
+
+    resetSingleTraineeAssessment(icNumber);
+    refreshData();
+    if (selectedTraineeTranscript && selectedTraineeTranscript.icNumber === icNumber) {
+      setSelectedTraineeTranscript(null);
+    }
   };
 
   // Tukar kata laluan owner
@@ -228,672 +351,1198 @@ export const MatricAuthModal: React.FC<MatricAuthModalProps> = ({
     }
   };
 
-  // Reset ke asal
+  // Reset ke 42 pelatih asal
   const handleResetToDefault = () => {
     const confirmReset = window.confirm(
-      'Kembalikan ke senarai asal pelatih ILKKM Sungai Buloh? Perubahan yang telah ditambah akan digantikan dengan senarai lalai.'
+      'Kembalikan ke senarai asal 42 orang pelatih ILKKM Sungai Buloh? Perubahan terkini akan digantikan semula dengan 42 rekod rasmi.'
     );
     if (!confirmReset) return;
     resetRegisteredTraineesToDefault();
     refreshData();
   };
 
+  // Filter senarai pelatih
   const filteredRoster = registeredList.filter(
     (t) =>
       t.fullName.toLowerCase().includes(rosterSearch.toLowerCase()) ||
-      t.matricNumber.toLowerCase().includes(rosterSearch.toLowerCase()) ||
+      t.icNumber.toLowerCase().includes(rosterSearch.toLowerCase()) ||
+      (t.matricNumber && t.matricNumber.toLowerCase().includes(rosterSearch.toLowerCase())) ||
       t.programme.toLowerCase().includes(rosterSearch.toLowerCase())
   );
 
+  const filteredQuickList = registeredList.filter(
+    (t) =>
+      t.fullName.toLowerCase().includes(quickSearch.toLowerCase()) ||
+      t.icNumber.toLowerCase().includes(quickSearch.toLowerCase()) ||
+      t.programme.toLowerCase().includes(quickSearch.toLowerCase())
+  );
+
+  // Penapisan pemantauan penilaian
+  const filteredAssessments = traineeAssessments.filter((item) => {
+    const matchesSearch = 
+      item.fullName.toLowerCase().includes(monitorSearch.toLowerCase()) ||
+      item.icNumber.toLowerCase().includes(monitorSearch.toLowerCase()) ||
+      (item.matricNumber && item.matricNumber.toLowerCase().includes(monitorSearch.toLowerCase())) ||
+      item.programme.toLowerCase().includes(monitorSearch.toLowerCase());
+
+    if (!matchesSearch) return false;
+
+    if (monitorFilter === 'evaluated') return item.isEvaluated;
+    if (monitorFilter === 'unevaluated') return !item.isEvaluated;
+    if (monitorFilter === 'gradeA') return item.grade === 'A';
+    return true;
+  });
+
+  // Statistik pemantauan
+  const evaluatedCount = traineeAssessments.filter((t) => t.isEvaluated).length;
+  const evaluatedPercent = Math.round((evaluatedCount / (traineeAssessments.length || 1)) * 100);
+  const evaluatedScores = traineeAssessments.filter((t) => t.isEvaluated).map((t) => t.averageScore);
+  const overallAvgScore = evaluatedScores.length > 0 
+    ? Math.round(evaluatedScores.reduce((a, b) => a + b, 0) / evaluatedScores.length) 
+    : 0;
+  const gradeACount = traineeAssessments.filter((t) => t.grade === 'A').length;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/65 backdrop-blur-xs animate-in fade-in duration-200">
       <div 
-        className="bg-white rounded-[28px] border border-[#D0D0C0] shadow-2xl max-w-2xl w-full overflow-hidden flex flex-col max-h-[92vh]"
+        className="bg-white rounded-3xl max-w-3xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-[#D0D0C0]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header with Institutional Identity */}
-        <div className="p-6 bg-[#33422C] text-white relative">
-          <button
-            onClick={onClose}
-            className="absolute top-5 right-5 p-2 rounded-xl text-[#C8D6C4] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-            title="Tutup"
-          >
-            <X className="w-5 h-5" />
-          </button>
-
-          <div className="flex items-center space-x-3 mb-2">
-            <div className="w-11 h-11 rounded-2xl bg-[#495E3F] border border-[#6A8A60] flex items-center justify-center text-white shrink-0 shadow-xs">
-              <ShieldCheck className="w-6 h-6 text-[#D5E2D0]" />
-            </div>
-            <div>
-              <span className="text-[11px] font-mono uppercase tracking-wider text-[#A3C096] font-bold block">
-                Kawalan Capaian Institusi • Kod GCMT 2052
-              </span>
-              <h3 className="text-lg sm:text-xl font-extrabold text-white leading-tight">
-                Pengesahan Pelatih ILKKM Sungai Buloh
-              </h3>
-            </div>
-          </div>
-
-          <p className="text-xs text-[#C8D6C4] leading-relaxed">
-            {OFFICIAL_INSTITUTION_NAME}
-          </p>
-
-          {requiredForAction && (
-            <div className="mt-3 py-1.5 px-3 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-200 text-xs flex items-center gap-2">
-              <Lock className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-              <span>Sahkan No. Matrik untuk: <strong>{requiredForAction}</strong></span>
-            </div>
-          )}
-        </div>
-
-        {/* Verified Session Status Bar (if student logged in) */}
-        {currentSession.isVerified && currentSession.matricNumber && (
-          <div className="p-4 bg-[#EBF0E6] border-b border-[#C8D6C4] flex items-center justify-between gap-3 text-left">
-            <div className="flex items-center space-x-2.5">
-              <div className="w-8 h-8 rounded-full bg-[#495E3F] text-white flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-4 h-4" />
+        {/* MODAL HEADER */}
+        <div className="p-5 sm:p-6 bg-[#33422C] text-white relative shrink-0">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-11 h-11 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-6 h-6 text-[#A6BF9F]" />
               </div>
               <div>
-                <p className="text-xs font-bold text-[#33422C]">
-                  Sesi Pelatih Aktif: {currentSession.studentName}
-                </p>
-                <p className="text-[11px] text-[#55694D]">
-                  No. Matrik: <strong className="font-mono">{currentSession.matricNumber}</strong> • {currentSession.programme}
-                </p>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#A6BF9F] block">
+                  ILKKM Sungai Buloh • GCMT 2052
+                </span>
+                <h3 className="text-lg sm:text-xl font-black">
+                  Pengesahan & Pengurusan Pelatih
+                </h3>
               </div>
             </div>
 
             <button
-              onClick={handleStudentLogout}
-              className="px-3 py-1.5 rounded-xl bg-white border border-[#C8D6C4] hover:bg-[#F5F5F0] text-[#7A3B2E] text-xs font-bold flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
-              title="Kunci semula dan log keluar"
+              onClick={onClose}
+              className="p-2 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              title="Tutup"
             >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Log Keluar</span>
+              <X className="w-5 h-5" />
             </button>
           </div>
-        )}
 
-        {/* Main Tab Bar */}
-        <div className="flex border-b border-[#E0E0D0] bg-[#FAF9F5] px-6 pt-3 gap-3 text-xs font-bold">
-          <button
-            onClick={() => setMainTab('student')}
-            className={`pb-3 px-3.5 border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
-              mainTab === 'student'
-                ? 'border-[#495E3F] text-[#33422C]'
-                : 'border-transparent text-[#7A7A6A] hover:text-[#4A4A40]'
-            }`}
-          >
-            <KeyRound className="w-4 h-4" />
-            <span>Semakan No. Matrik Pelatih</span>
-          </button>
-
-          <button
-            onClick={() => setMainTab('owner')}
-            className={`pb-3 px-3.5 border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
-              mainTab === 'owner'
-                ? 'border-[#D98C70] text-[#8E472D]'
-                : 'border-transparent text-[#7A7A6A] hover:text-[#4A4A40]'
-            }`}
-          >
-            <Lock className="w-4 h-4" />
-            <span>Panel Pensyarah / Owner</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#EBD0C6] text-[#8E472D]">
-              Khas Owner
-            </span>
-          </button>
-        </div>
-
-        {/* Tab Content */}
-        <div className="p-6 overflow-y-auto flex-1">
-          
-          {/* ======================================================== */}
-          {/* TAB 1: STUDENT MATRIC VERIFICATION                        */}
-          {/* ======================================================== */}
-          {mainTab === 'student' && (
-            <div className="space-y-5">
-              
-              {/* Notice Box: Only owner can enter matric numbers */}
-              <div className="p-4 rounded-2xl bg-[#F4F6F2] border border-[#D5E0D0] text-xs text-[#4A5944] leading-relaxed">
-                <div className="flex items-start gap-2 font-bold text-[#33422C] mb-1">
-                  <Building2 className="w-4 h-4 text-[#495E3F] shrink-0 mt-0.5" />
-                  <span>Khas untuk Pelatih Berdaftar ILKKM Sungai Buloh Sahaja</span>
-                </div>
-                Soalan ulangkaji dan ujian pantas GCMT 2052 dikawal rapi. Senarai nombor matrik dimasukkan dan disahkan sepenuhnya oleh <strong>Pensyarah / Owner kursus</strong>. Pelatih luar (Kolej Vokasional/Matrikulasi/Kolej lain) tidak dibenarkan mengakses soalan ini.
-              </div>
-
-              {/* Error Message if matric not found */}
-              {studentError && (
-                <div className="p-4 rounded-2xl bg-[#FDF2F0] border-2 border-[#EBD0C6] text-[#8E3220] text-xs space-y-2 animate-in shake">
-                  <div className="flex items-center gap-2 font-bold text-sm">
-                    <ShieldAlert className="w-5 h-5 text-[#C74B32] shrink-0" />
-                    <span>Akses Ditolak</span>
-                  </div>
-                  <p className="leading-relaxed">{studentError}</p>
-                  <div className="pt-2 border-t border-[#EBD0C6]/60 text-[11px] text-[#A24430]">
-                    *Hanya pensyarah kursus boleh mendaftarkan nombor matrik anda. Sila maklumkan kepada Pensyarah Matematik GCMT 2052 ILKKM Sungai Buloh anda jika nombor matrik belum dimasukkan.
-                  </div>
-                </div>
-              )}
-
-              {/* Success Message */}
-              {studentSuccess && (
-                <div className="p-4 rounded-2xl bg-[#EBF0E6] border-2 border-[#C8D6C4] text-[#33422C] text-xs flex items-center gap-2 font-bold animate-in fade-in">
-                  <CheckCircle2 className="w-5 h-5 text-[#495E3F] shrink-0" />
-                  <span>{studentSuccess}</span>
-                </div>
-              )}
-
-              {/* Verification Form */}
-              <form onSubmit={handleStudentLogin} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-[#5A5A50] uppercase tracking-wider mb-1.5">
-                    Masukkan Nombor Matrik Anda:
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      required
-                      value={studentMatric}
-                      onChange={(e) => setStudentMatric(e.target.value)}
-                      placeholder="Contoh: GCMT/2026/0482 atau ILKKMSB/2026/0041"
-                      className="w-full px-4 py-3.5 rounded-2xl border-2 border-[#D0D0C0] bg-white text-sm font-mono font-bold text-[#33422C] focus:outline-none focus:border-[#495E3F] focus:ring-2 focus:ring-[#A3AD94]/40 uppercase placeholder:text-gray-400"
-                    />
-                  </div>
-                  <span className="text-[11px] text-[#7A7A6A] mt-1 block">
-                    Format matrik contoh: <span className="font-mono">GCMT/2026/XXXX</span> atau <span className="font-mono">ILKKMSB/2026/XXXX</span>
-                  </span>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-3.5 px-5 rounded-2xl bg-[#495E3F] hover:bg-[#3D4F34] text-white font-bold text-sm shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Unlock className="w-4 h-4" />
-                  <span>Sahkan Nombor Matrik & Buka Soalan</span>
-                </button>
-              </form>
-
-              {/* Quick test buttons for lecturer / evaluation */}
-              <div className="pt-4 border-t border-[#E8E8E0]">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#7A7A6A]">
-                    Contoh No. Matrik Sah yang Didaftarkan Owner ({registeredList.length} Dalam Senarai):
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {registeredList.slice(0, 4).map((t) => (
-                    <button
-                      key={t.matricNumber}
-                      type="button"
-                      onClick={() => handleQuickSelectTrainee(t.matricNumber)}
-                      className="p-2.5 rounded-xl border border-[#D0D0C0] bg-[#FAF9F5] hover:bg-[#EBF0E6] text-left transition-colors flex items-center justify-between text-xs cursor-pointer"
-                    >
-                      <div className="truncate pr-2">
-                        <span className="font-mono font-bold text-[#33422C] block">
-                          {t.matricNumber}
-                        </span>
-                        <span className="text-[11px] text-[#7A7A6A] truncate block">
-                          {t.fullName}
-                        </span>
-                      </div>
-                      <ArrowRight className="w-3.5 h-3.5 text-[#495E3F] shrink-0" />
-                    </button>
-                  ))}
-                </div>
-              </div>
+          {requiredForAction && (
+            <div className="mt-3 py-1.5 px-3 rounded-xl bg-[#D98C70]/30 border border-[#D98C70]/50 text-white text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-[#FFC4B0] shrink-0" />
+              <span>Sila sahkan MyKad anda sebelum memulakan: <strong>{requiredForAction}</strong></span>
             </div>
           )}
 
-          {/* ======================================================== */}
-          {/* TAB 2: OWNER / PENSYARAH PANEL (LOCKED)                   */}
-          {/* ======================================================== */}
-          {mainTab === 'owner' && (
-            <div>
-              {!isOwnerUnlocked ? (
-                /* Owner Lock Screen */
-                <form onSubmit={handleOwnerUnlock} className="space-y-4 py-2">
-                  <div className="p-4 rounded-2xl bg-[#FFF9F6] border border-[#EBD0C6] text-xs text-[#7A554A] leading-relaxed">
-                    <div className="flex items-center gap-2 text-[#8E472D] font-bold text-sm mb-1">
-                      <Lock className="w-4 h-4 text-[#D98C70]" />
-                      <span>Panel Pengurusan Senarai No. Matrik (Owner Sahaja)</span>
+          {/* MAIN TABS: PELATIH VS PENGAJAR */}
+          <div className="grid grid-cols-2 gap-2 mt-4 p-1 rounded-2xl bg-black/20 border border-white/10 text-xs">
+            <button
+              onClick={() => setMainTab('student')}
+              className={`py-2 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                mainTab === 'student'
+                  ? 'bg-white text-[#33422C] shadow-sm'
+                  : 'text-white/80 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <UserCheck className="w-4 h-4" />
+              <span>Pelatih ({currentSession.isVerified ? 'Aktif' : 'Log Masuk'})</span>
+            </button>
+
+            <button
+              onClick={() => setMainTab('owner')}
+              className={`py-2 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                mainTab === 'owner'
+                  ? 'bg-[#D98C70] text-white shadow-sm'
+                  : 'text-white/80 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <KeyRound className="w-4 h-4" />
+              <span>Pengajar: Pn Norashikin</span>
+            </button>
+          </div>
+        </div>
+
+        {/* FEEDBACK POPUP JIKA TUKAR SESI */}
+        {switchFeedback && (
+          <div className="bg-[#EBF0E6] border-b border-[#C8D6C4] px-5 py-2.5 text-xs text-[#33422C] font-bold flex items-center justify-between animate-in slide-in-from-top">
+            <span className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-[#495E3F]" />
+              <span>{switchFeedback}</span>
+            </span>
+            <span className="text-[11px] text-[#495E3F]">Menutup tingkap...</span>
+          </div>
+        )}
+
+        {/* MODAL BODY */}
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5">
+          {mainTab === 'student' ? (
+            /* ========================================================= */
+            /* TAB 1: LOG MASUK PELATIH (IC & NAMA PENUH)                */
+            /* ========================================================= */
+            <div className="space-y-5 animate-in fade-in">
+              {/* STATUS SESI AKTIF PELATIH */}
+              {currentSession.isVerified && currentSession.studentName ? (
+                <div className="p-4 sm:p-5 rounded-2xl bg-[#EBF0E6] border-2 border-[#C8D6C4] space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#495E3F] text-white flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="w-6 h-6 text-[#D5E2D0]" />
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-[#495E3F] block">
+                          Sesi Pelatih Sah & Aktif
+                        </span>
+                        <h4 className="text-base font-black text-[#142611]">
+                          {currentSession.studentName}
+                        </h4>
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-[#33422C] mt-0.5">
+                          {currentSession.icNumber && (
+                            <span className="font-mono font-bold bg-white px-2 py-0.5 rounded-md border border-[#C8D6C4]">
+                              K/P: {currentSession.icNumber}
+                            </span>
+                          )}
+                          {currentSession.programme && (
+                            <span>• {currentSession.programme}</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    Hanya Pensyarah / Owner kursus dibenarkan memasukkan atau mengubah senarai nombor matrik pelatih berdaftar. Pelatih tidak mempunyai kata laluan ini.
+
+                    <button
+                      onClick={handleStudentLogout}
+                      className="px-3 py-2 rounded-xl bg-white border border-[#C8D6C4] text-[#A35C42] hover:bg-[#FDF5F2] hover:border-[#D98C70] text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                      title="Log Keluar untuk memilih pelatih lain"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Log Keluar</span>
+                    </button>
                   </div>
 
-                  {ownerAuthError && (
-                    <div className="p-3.5 rounded-xl bg-[#FDF2F0] border border-[#EBD0C6] text-[#8E3220] text-xs flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-[#C74B32] shrink-0" />
-                      <span>{ownerAuthError}</span>
+                  <div className="pt-2 border-t border-[#C8D6C4]/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#495E3F]">
+                    <span>Akses penuh ke semua 10 unit soalan dan sijil digital GCMT 2052 aktif.</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowQuickSelect(!showQuickSelect)}
+                      className="font-bold underline text-[#33422C] hover:text-[#1F291B] text-left cursor-pointer"
+                    >
+                      Tukar ke Pelatih Lain?
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* BORANG LOG MASUK PELATIH */
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-[#FAF9F5] border border-[#E0E0D0] text-xs text-[#4A4A40] space-y-1.5">
+                    <div className="flex items-start gap-2 font-bold text-[#33422C]">
+                      <AlertCircle className="w-4 h-4 text-[#495E3F] shrink-0 mt-0.5" />
+                      <span>Akses Rasmi 42 Orang Pelatih ILKKM Sungai Buloh</span>
                     </div>
-                  )}
-
-                  <div>
-                    <label className="block text-xs font-bold text-[#5A5A50] uppercase tracking-wider mb-1.5">
-                      Masukkan Kata Laluan Pensyarah / Owner:
-                    </label>
-                    <input
-                      type="password"
-                      required
-                      value={ownerPasswordInput}
-                      onChange={(e) => setOwnerPasswordInput(e.target.value)}
-                      placeholder="Masukkan kata laluan owner..."
-                      className="w-full px-4 py-3 rounded-xl border-2 border-[#D0D0C0] bg-white text-sm font-mono font-bold focus:outline-none focus:border-[#D98C70] focus:ring-2 focus:ring-[#D98C70]/30"
-                    />
-                    <p className="text-[11px] text-[#7A7A6A] mt-1.5">
-                      *Kata laluan lalai pensyarah: <code className="font-mono font-bold text-[#D98C70]">OWNER2026</code> atau <code className="font-mono font-bold text-[#D98C70]">ILKKMSB2026</code>
+                    <p className="leading-relaxed">
+                      Sila masukkan <strong>Nombor Kad Pengenalan</strong> dan <strong>Nama Penuh</strong> anda seperti yang didaftarkan dalam senarai rasmi GCMT 2052. Anda juga boleh menggunakan pilihan pantas di bawah untuk memilih nama pelatih.
                     </p>
                   </div>
 
-                  <button
-                    type="submit"
-                    className="w-full py-3.5 px-5 rounded-2xl bg-[#D98C70] hover:bg-[#C7795C] text-white font-bold text-sm shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <Unlock className="w-4 h-4" />
-                    <span>Buka Panel Pengurusan Owner</span>
-                  </button>
-                </form>
-              ) : (
-                /* Owner Unlocked Management Dashboard */
-                <div className="space-y-5">
-                  {/* Owner Status Header */}
-                  <div className="p-3.5 rounded-2xl bg-[#EBF0E6] border border-[#C8D6C4] flex items-center justify-between text-xs">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#495E3F] animate-pulse" />
-                      <span className="font-bold text-[#33422C]">
-                        Mod Owner Aktif • {registeredList.length} Pelatih Berdaftar
-                      </span>
+                  {studentError && (
+                    <div className="p-4 rounded-2xl bg-[#FDF5F2] border-2 border-[#EBD0C6] text-[#A35C42] text-xs flex items-start gap-3 animate-in shake">
+                      <ShieldAlert className="w-5 h-5 text-[#D98C70] shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <strong className="block font-bold">Akses Tidak Dibenarkan</strong>
+                        <p>{studentError}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {studentSuccess && (
+                    <div className="p-4 rounded-2xl bg-[#EBF0E6] border-2 border-[#C8D6C4] text-[#33422C] text-xs flex items-center gap-2 font-bold animate-in fade-in">
+                      <CheckCircle2 className="w-5 h-5 text-[#495E3F] shrink-0" />
+                      <span>{studentSuccess}</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleStudentLogin} className="space-y-4">
+                    {/* MEDAN 1: NOMBOR KAD PENGENALAN */}
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-[#33422C] uppercase tracking-wider flex items-center gap-1.5">
+                        <CreditCard className="w-4 h-4 text-[#495E3F]" />
+                        <span>Nombor Kad Pengenalan (MyKad)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={studentIc}
+                        onChange={(e) => setStudentIc(e.target.value)}
+                        placeholder="cth: 050114-10-1023 atau 050114101023"
+                        className="w-full px-4 py-3 rounded-2xl border-2 border-[#D0D0C0] bg-white text-sm font-mono font-bold text-[#33422C] focus:outline-none focus:border-[#495E3F] focus:ring-2 focus:ring-[#A3AD94]/40 placeholder:text-gray-400"
+                        required
+                        autoFocus
+                      />
+                    </div>
+
+                    {/* MEDAN 2: NAMA PENUH */}
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-[#33422C] uppercase tracking-wider flex items-center gap-1.5">
+                        <User className="w-4 h-4 text-[#495E3F]" />
+                        <span>Nama Penuh Pelatih</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={studentName}
+                        onChange={(e) => setStudentName(e.target.value)}
+                        placeholder="cth: MUHAMMAD AMIRUL AIMAN BIN ZULKIFLI"
+                        className="w-full px-4 py-3 rounded-2xl border-2 border-[#D0D0C0] bg-white text-sm font-bold text-[#33422C] focus:outline-none focus:border-[#495E3F] focus:ring-2 focus:ring-[#A3AD94]/40 placeholder:text-gray-400 uppercase"
+                        required
+                      />
                     </div>
 
                     <button
-                      onClick={() => setIsOwnerUnlocked(false)}
-                      className="px-3 py-1 rounded-xl bg-white border border-[#C8D6C4] hover:bg-[#FAF9F5] text-[#7A3B2E] font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                      type="submit"
+                      className="w-full py-3.5 px-6 rounded-2xl bg-[#33422C] hover:bg-[#253220] text-white text-sm font-black flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
                     >
-                      <Lock className="w-3 h-3" />
-                      <span>Kunci Panel</span>
+                      <ShieldCheck className="w-5 h-5 text-[#A6BF9F]" />
+                      <span>Sahkan Kad Pengenalan & Masuk</span>
+                      <ArrowRight className="w-4 h-4 ml-1" />
                     </button>
+                  </form>
+                </div>
+              )}
+
+              {/* QUICK SELECT TESTER HELPER (UNTUK MELIHAT PELATIH LAIN) */}
+              <div className="pt-2 border-t border-[#E0E0D0]">
+                <button
+                  type="button"
+                  onClick={() => setShowQuickSelect(!showQuickSelect)}
+                  className="w-full py-2.5 px-3 rounded-2xl bg-[#FAF9F5] hover:bg-[#EBF0E6] text-[#495E3F] text-xs font-bold flex items-center justify-between border border-[#D0D0C0] transition-colors cursor-pointer"
+                >
+                  <span className="flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-[#D98C70]" />
+                    <span>Pilih Terus Dari Senarai 42 Pelatih (Tukar / Uji Pantas)</span>
+                  </span>
+                  <span className="text-[11px] font-mono bg-white px-2 py-0.5 rounded-full border border-[#D0D0C0]">
+                    {showQuickSelect ? 'Tutup Senarai' : `Buka (${registeredList.length} Pelatih)`}
+                  </span>
+                </button>
+
+                {showQuickSelect && (
+                  <div className="mt-3 p-3 rounded-2xl bg-white border border-[#C8D6C4] shadow-md space-y-2 animate-in fade-in">
+                    <div className="relative">
+                      <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#7A7A6A]" />
+                      <input
+                        type="text"
+                        value={quickSearch}
+                        onChange={(e) => setQuickSearch(e.target.value)}
+                        placeholder="Cari nama, IC atau program pelatih..."
+                        className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-[#D0D0C0] bg-[#FAF9F5] focus:outline-none focus:border-[#495E3F]"
+                        autoFocus
+                      />
+                    </div>
+
+                    <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1 divide-y divide-gray-100">
+                      {filteredQuickList.map((t, idx) => (
+                        <div
+                          key={t.icNumber + idx}
+                          className="pt-1.5 flex items-center justify-between text-xs hover:bg-[#F5F8F4] p-1.5 rounded-xl transition-colors"
+                        >
+                          <div className="pr-2 min-w-0 flex-1">
+                            <span className="font-bold text-[#142611] block truncate">
+                              {idx + 1}. {t.fullName}
+                            </span>
+                            <span className="text-[11px] font-mono text-[#55694D] block">
+                              {t.icNumber} • {t.programme}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleSelectQuickTrainee(t)}
+                            className="text-[10px] bg-[#33422C] hover:bg-[#23311E] text-white font-bold px-3 py-1.5 rounded-lg shrink-0 cursor-pointer shadow-2xs"
+                          >
+                            Pilih Pelatih
+                          </button>
+                        </div>
+                      ))}
+                      {filteredQuickList.length === 0 && (
+                        <p className="text-center py-4 text-xs text-gray-500">
+                          Tiada pelatih dijumpai.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* ========================================================= */
+            /* TAB 2: PANEL PENGAJAR / OWNER (PUAN NORASHIKIN)          */
+            /* ========================================================= */
+            <div className="space-y-5 animate-in fade-in">
+              {!isOwnerUnlocked ? (
+                /* KUNCI KATA LALUAN OWNER */
+                <div className="text-center py-6 px-4 space-y-4 max-w-md mx-auto">
+                  <div className="w-14 h-14 rounded-3xl bg-[#FDF5F2] border-2 border-[#EBD0C6] flex items-center justify-center mx-auto text-[#D98C70]">
+                    <Lock className="w-7 h-7" />
                   </div>
 
-                  {/* Owner Sub Navigation */}
-                  <div className="flex flex-wrap gap-1.5 p-1.5 rounded-2xl bg-[#FAF9F5] border border-[#E0E0D0] text-xs font-semibold">
-                    <button
-                      onClick={() => setOwnerSubTab('batch')}
-                      className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                        ownerSubTab === 'batch'
-                          ? 'bg-[#D98C70] text-white shadow-xs'
-                          : 'text-[#5A5A50] hover:bg-white'
-                      }`}
-                    >
-                      <ListPlus className="w-3.5 h-3.5" />
-                      <span>Tampal Pukal (Batch)</span>
-                    </button>
+                  <div className="space-y-1">
+                    <h4 className="text-base font-black text-[#33422C]">
+                      Akses Khas Pengajar (Puan Norashikin)
+                    </h4>
+                    <p className="text-xs text-[#68685C]">
+                      Sila masukkan kata laluan pengajar untuk memantau penilaian pelatih, memuat naik fail CSV, atau menyunting data.
+                    </p>
+                  </div>
+
+                  {ownerAuthError && (
+                    <div className="p-3 rounded-xl bg-[#FDF5F2] border border-[#EBD0C6] text-[#A35C42] text-xs font-semibold">
+                      {ownerAuthError}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleOwnerUnlock} className="space-y-3">
+                    <input
+                      type="password"
+                      value={ownerPasswordInput}
+                      onChange={(e) => setOwnerPasswordInput(e.target.value)}
+                      placeholder="Masukkan Kata Laluan Pengajar"
+                      className="w-full px-4 py-3 rounded-xl border-2 border-[#D0D0C0] bg-white text-sm text-center font-bold text-[#33422C] focus:outline-none focus:border-[#D98C70]"
+                      autoFocus
+                    />
 
                     <button
-                      onClick={() => setOwnerSubTab('single')}
-                      className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                        ownerSubTab === 'single'
-                          ? 'bg-[#D98C70] text-white shadow-xs'
-                          : 'text-[#5A5A50] hover:bg-white'
+                      type="submit"
+                      className="w-full py-3 px-4 rounded-xl bg-[#D98C70] hover:bg-[#C7795C] text-white text-xs font-black flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer"
+                    >
+                      <Unlock className="w-4 h-4" />
+                      <span>Buka Akses Panel Pengajar</span>
+                    </button>
+                  </form>
+                  <p className="text-[11px] text-[#8A8A7A]">
+                    Akses selamat terhad kepada Pengajar Kursus Matematik sahaja.
+                  </p>
+                </div>
+              ) : (
+                /* PANEL OWNER BERJAYA DIBUKA */
+                <div className="space-y-4">
+                  {/* PENUNJUK SESI SEMASA & LOG KELUAR PANTAS */}
+                  <div className="p-3 rounded-2xl bg-[#EBF0E6] border border-[#C8D6C4] flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <UserCheck className="w-4 h-4 text-[#495E3F]" />
+                      <span>
+                        Sesi Pelatih Aktif: <strong>{currentSession.isVerified ? currentSession.studentName : 'Tiada (Belum Log Masuk)'}</strong>
+                      </span>
+                    </div>
+
+                    {currentSession.isVerified && (
+                      <button
+                        type="button"
+                        onClick={handleStudentLogout}
+                        className="px-2.5 py-1 rounded-xl bg-white hover:bg-[#FDF5F2] text-[#A35C42] border border-[#C8D6C4] text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                        title="Log Keluar Pelatih Semasa"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Log Keluar Pelatih</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* SUB-TABS OWNER */}
+                  <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-2xl bg-[#FAF9F5] border border-[#D0D0C0] text-xs">
+                    <button
+                      onClick={() => setOwnerSubTab('monitor')}
+                      className={`flex-1 py-2 px-3 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                        ownerSubTab === 'monitor'
+                          ? 'bg-[#33422C] text-white shadow-xs'
+                          : 'text-[#4A4A40] hover:bg-[#EBF0E6]'
                       }`}
                     >
-                      <UserPlus className="w-3.5 h-3.5" />
-                      <span>Tambah Individu</span>
+                      <BarChart3 className="w-3.5 h-3.5" />
+                      <span>Pemantauan Penilaian ({evaluatedCount})</span>
                     </button>
 
                     <button
                       onClick={() => setOwnerSubTab('list')}
-                      className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                      className={`py-2 px-3 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                         ownerSubTab === 'list'
-                          ? 'bg-[#D98C70] text-white shadow-xs'
-                          : 'text-[#5A5A50] hover:bg-white'
+                          ? 'bg-[#33422C] text-white shadow-xs'
+                          : 'text-[#4A4A40] hover:bg-[#EBF0E6]'
                       }`}
                     >
-                      <UserCheck className="w-3.5 h-3.5" />
+                      <User className="w-3.5 h-3.5" />
                       <span>Senarai ({registeredList.length})</span>
                     </button>
 
                     <button
-                      onClick={() => setOwnerSubTab('settings')}
-                      className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                        ownerSubTab === 'settings'
-                          ? 'bg-[#D98C70] text-white shadow-xs'
-                          : 'text-[#5A5A50] hover:bg-white'
+                      onClick={() => setOwnerSubTab('upload')}
+                      className={`py-2 px-3 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                        ownerSubTab === 'upload'
+                          ? 'bg-[#33422C] text-white shadow-xs'
+                          : 'text-[#4A4A40] hover:bg-[#EBF0E6]'
                       }`}
                     >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Muat Naik CSV</span>
+                    </button>
+
+                    <button
+                      onClick={() => setOwnerSubTab('single')}
+                      className={`py-2 px-2.5 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                        ownerSubTab === 'single'
+                          ? 'bg-[#33422C] text-white shadow-xs'
+                          : 'text-[#4A4A40] hover:bg-[#EBF0E6]'
+                      }`}
+                      title="Tambah Pelatih Individu"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Tambah</span>
+                    </button>
+
+                    <button
+                      onClick={() => setOwnerSubTab('settings')}
+                      className={`py-2 px-2.5 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                        ownerSubTab === 'settings'
+                          ? 'bg-[#33422C] text-white shadow-xs'
+                          : 'text-[#4A4A40] hover:bg-[#EBF0E6]'
+                      }`}
+                      title="Tetapan & Kata Laluan"
+                    >
                       <Settings className="w-3.5 h-3.5" />
-                      <span>Tetapan Owner</span>
                     </button>
                   </div>
 
-                  {/* SUB-TAB 1: BATCH IMPORT */}
-                  {ownerSubTab === 'batch' && (
-                    <form onSubmit={handleBatchImportSubmit} className="space-y-4">
-                      <div className="p-3.5 rounded-2xl bg-[#FAF9F5] border border-[#E0E0D0] text-xs text-[#5A5A50] leading-relaxed">
-                        <p className="font-bold text-[#4A4A40] mb-1">
-                          📋 Panduan Memasukkan Senarai No. Matrik Pukal (Batch):
-                        </p>
-                        Salin terus dari senarai kelas, Excel, atau WhatsApp dan tampal di bawah. Format yang diterima:
-                        <ul className="list-disc list-inside mt-1 font-mono text-[11px] text-[#6A6A5E] space-y-0.5">
-                          <li><code>DPF/2026/001 - AHMAD FAIZ</code> (No Matrik - Nama)</li>
-                          <li><code>DPKP/2026/002, NURUL IZZAH, Diploma Kesihatan Persekitaran</code></li>
-                          <li><code>ILKKMSB/2026/003</code> (No Matrik sahaja, satu baris setiap pelatih)</li>
-                        </ul>
-                      </div>
-
-                      {batchResult && (
-                        <div
-                          className={`p-3.5 rounded-2xl border text-xs flex items-start gap-2 ${
-                            batchResult.success
-                              ? 'bg-[#EBF0E6] border-[#C8D6C4] text-[#33422C]'
-                              : 'bg-[#FDF2F0] border-[#EBD0C6] text-[#8E3220]'
-                          }`}
-                        >
-                          {batchResult.success ? (
-                            <CheckCircle2 className="w-4 h-4 text-[#495E3F] shrink-0 mt-0.5" />
-                          ) : (
-                            <AlertCircle className="w-4 h-4 text-[#C74B32] shrink-0 mt-0.5" />
-                          )}
-                          <div>
-                            <p className="font-bold">{batchResult.message}</p>
-                          </div>
+                  {/* ==================================================== */}
+                  {/* SUB-PANEL 1: PEMANTAUAN PENILAIAN PELATIH            */}
+                  {/* ==================================================== */}
+                  {ownerSubTab === 'monitor' && (
+                    <div className="space-y-4 animate-in fade-in">
+                      {/* STATISTIK KAD RINGKASAN */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        <div className="p-3 rounded-2xl bg-[#FAF9F5] border border-[#E0E0D0] space-y-0.5">
+                          <span className="text-[11px] text-[#7A7A6A] block">Jumlah Pelatih</span>
+                          <span className="text-lg font-black text-[#33422C]">{traineeAssessments.length}</span>
+                          <span className="text-[10px] text-[#495E3F] block font-semibold">100% Berdaftar</span>
                         </div>
-                      )}
 
-                      <div>
-                        <label className="block text-xs font-bold text-[#5A5A50] uppercase tracking-wider mb-1.5">
-                          Program Pengajian Lalai (untuk entri tanpa program):
-                        </label>
-                        <select
-                          value={batchDefaultProgramme}
-                          onChange={(e) => setBatchDefaultProgramme(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-[#D0D0C0] text-xs font-semibold bg-white"
-                        >
-                          <option value="Diploma Farmasi">Diploma Farmasi</option>
-                          <option value="Diploma Kesihatan Persekitaran">Diploma Kesihatan Persekitaran</option>
-                          <option value="Diploma Sains Kejururawatan">Diploma Sains Kejururawatan</option>
-                          <option value="Diploma Pembantu Pegawai Perubatan">Diploma Pembantu Pegawai Perubatan</option>
-                          <option value="Diploma Fisioterapi / Radiografi">Diploma Fisioterapi / Radiografi</option>
-                        </select>
+                        <div className="p-3 rounded-2xl bg-[#EBF0E6] border border-[#C8D6C4] space-y-0.5">
+                          <span className="text-[11px] text-[#495E3F] block">Telah Dinilai</span>
+                          <span className="text-lg font-black text-[#23311E]">{evaluatedCount}</span>
+                          <span className="text-[10px] text-[#33422C] block font-semibold">{evaluatedPercent}% Mengambil Ujian</span>
+                        </div>
+
+                        <div className="p-3 rounded-2xl bg-[#FAF9F5] border border-[#E0E0D0] space-y-0.5">
+                          <span className="text-[11px] text-[#7A7A6A] block">Belum Dinilai</span>
+                          <span className="text-lg font-black text-[#7A7A6A]">{traineeAssessments.length - evaluatedCount}</span>
+                          <span className="text-[10px] text-[#8A8A7A] block">Menunggu Giliran</span>
+                        </div>
+
+                        <div className="p-3 rounded-2xl bg-[#FDF5F2] border border-[#EBD0C6] space-y-0.5">
+                          <span className="text-[11px] text-[#A35C42] block">Purata Skor / Gred A</span>
+                          <span className="text-lg font-black text-[#8E472D]">{overallAvgScore}%</span>
+                          <span className="text-[10px] text-[#D98C70] block font-semibold">{gradeACount} Gred A (≥80%)</span>
+                        </div>
                       </div>
 
-                      <div>
-                        <label className="block text-xs font-bold text-[#5A5A50] uppercase tracking-wider mb-1.5">
-                          Tampal Senarai No. Matrik (Satu setiap baris):
-                        </label>
-                        <textarea
-                          rows={6}
-                          required
-                          value={batchText}
-                          onChange={(e) => setBatchText(e.target.value)}
-                          placeholder={`Contoh:\nILKKMSB/2026/0120 - MUHAMMAD AIMAN\nILKKMSB/2026/0121 - SITI NUR AISYAH\nDPF/2026/0122`}
-                          className="w-full p-3.5 rounded-2xl border-2 border-[#D0D0C0] bg-white text-xs font-mono focus:outline-none focus:border-[#D98C70] focus:ring-2 focus:ring-[#D98C70]/30 placeholder:text-gray-400"
+                      {/* PENAPIS & CARIAN */}
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+                        <div className="flex items-center gap-1 overflow-x-auto pb-1 text-xs">
+                          <button
+                            type="button"
+                            onClick={() => setMonitorFilter('all')}
+                            className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                              monitorFilter === 'all'
+                                ? 'bg-[#33422C] text-white'
+                                : 'bg-[#FAF9F5] text-[#5A5A50] hover:bg-[#EBF0E6]'
+                            }`}
+                          >
+                            Semua ({traineeAssessments.length})
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setMonitorFilter('evaluated')}
+                            className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                              monitorFilter === 'evaluated'
+                                ? 'bg-[#495E3F] text-white'
+                                : 'bg-[#EBF0E6] text-[#33422C] hover:bg-[#D8E6D3]'
+                            }`}
+                          >
+                            Telah Dinilai ({evaluatedCount})
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setMonitorFilter('unevaluated')}
+                            className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                              monitorFilter === 'unevaluated'
+                                ? 'bg-[#7A7A6A] text-white'
+                                : 'bg-[#FAF9F5] text-[#5A5A50] hover:bg-[#EBF0E6]'
+                            }`}
+                          >
+                            Belum Dinilai ({traineeAssessments.length - evaluatedCount})
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setMonitorFilter('gradeA')}
+                            className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                              monitorFilter === 'gradeA'
+                                ? 'bg-[#D98C70] text-white'
+                                : 'bg-[#FDF5F2] text-[#8E472D] hover:bg-[#FBE8E1]'
+                            }`}
+                          >
+                            Gred A ({gradeACount})
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={handleDownloadAssessmentCsv}
+                            className="px-3 py-1.5 rounded-xl bg-[#33422C] hover:bg-[#253220] text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                            title="Muat Turun Lembaran Markah Penilaian"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Eksport CSV</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* KOTAK CARIAN PELATIH */}
+                      <div className="relative">
+                        <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#7A7A6A]" />
+                        <input
+                          type="text"
+                          value={monitorSearch}
+                          onChange={(e) => setMonitorSearch(e.target.value)}
+                          placeholder="Cari pelatih yang dinilai (Nama, MyKad, Program)..."
+                          className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-[#D0D0C0] bg-white focus:outline-none focus:border-[#495E3F]"
                         />
                       </div>
 
-                      <button
-                        type="submit"
-                        className="w-full py-3.5 px-5 rounded-2xl bg-[#D98C70] hover:bg-[#C7795C] text-white font-bold text-sm shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <ListPlus className="w-4 h-4" />
-                        <span>Masukkan & Simpan Senarai Pelatih</span>
-                      </button>
-                    </form>
+                      {/* JADUAL SENARAI PELATIH & STATUS PENILAIAN */}
+                      <div className="max-h-80 overflow-y-auto rounded-2xl border border-[#D0D0C0] divide-y divide-[#EAEAE0] bg-white text-xs">
+                        {filteredAssessments.map((item, idx) => (
+                          <div
+                            key={item.icNumber + idx}
+                            className="p-3 sm:p-3.5 hover:bg-[#FAF9F5] transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                          >
+                            {/* MAKLUMAT PELATIH */}
+                            <div className="space-y-1 min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-bold text-[#142611]">
+                                  {idx + 1}. {item.fullName}
+                                </span>
+                                {item.isEvaluated ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF0E6] text-[#2C4A22] border border-[#C8D6C4] flex items-center gap-1">
+                                    <Check className="w-3 h-3" />
+                                    Telah Dinilai
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#F2F2EC] text-[#7A7A6A]">
+                                    Belum Dinilai
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#68685C]">
+                                <span className="font-mono font-bold text-[#33422C]">
+                                  No. K/P: {item.icNumber}
+                                </span>
+                                {item.matricNumber && (
+                                  <span>• Matrik: {item.matricNumber}</span>
+                                )}
+                                <span>• {item.programme}</span>
+                              </div>
+
+                              {/* HASIL PENILAIAN RINGKAS */}
+                              {item.isEvaluated ? (
+                                <div className="flex flex-wrap items-center gap-3 pt-1 text-xs">
+                                  <span className="font-bold text-[#2A3B25]">
+                                    Purata Skor: <strong className="text-sm font-black text-[#33422C]">{item.averageScore}%</strong>
+                                  </span>
+                                  <span className="px-2 py-0.5 rounded-md font-bold text-[11px] bg-[#E8F0E8] text-[#33422C]">
+                                    Gred: {item.grade}
+                                  </span>
+                                  <span className="text-[#6A6A5E] text-[11px]">
+                                    {item.totalAttempts} Percubaan • {item.completedTopics.length} Unit Selesai
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="text-[11px] text-[#8A8A7A] italic">
+                                  Tiada rekod kuiz atau ujian setakat ini.
+                                </div>
+                              )}
+                            </div>
+
+                            {/* BUTANG TINDAKAN PENGAJAR */}
+                            <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                              {item.isEvaluated && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedTraineeTranscript(item)}
+                                  className="px-2.5 py-1.5 rounded-xl bg-[#FAF9F5] hover:bg-[#EBF0E6] text-[#33422C] border border-[#D0D0C0] text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                  title="Lihat transkrip terperinci kuiz pelatih"
+                                >
+                                  <BarChart3 className="w-3.5 h-3.5 text-[#495E3F]" />
+                                  <span>Transkrip</span>
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const target = registeredList.find((t) => t.icNumber === item.icNumber);
+                                  if (target) handleSwitchToTrainee(target);
+                                }}
+                                className="px-2.5 py-1.5 rounded-xl bg-[#33422C] hover:bg-[#23311E] text-white text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                                title="Lihat dan uji aplikasi sebagai pelatih ini"
+                              >
+                                <Eye className="w-3.5 h-3.5 text-[#A6BF9F]" />
+                                <span>Lihat Sebagai Pelatih</span>
+                              </button>
+
+                              {item.isEvaluated && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleResetTraineeScore(item.icNumber, item.fullName)}
+                                  className="p-1.5 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                                  title="Set Semula Markah"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+
+                        {filteredAssessments.length === 0 && (
+                          <div className="p-8 text-center text-[#7A7A6A] space-y-1">
+                            <BarChart3 className="w-8 h-8 text-[#A1B09C] mx-auto mb-2" />
+                            <p className="font-bold">Tiada pelatih ditemui</p>
+                            <p className="text-xs">Sila ubah carian atau pilihan penapis anda.</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   )}
 
-                  {/* SUB-TAB 2: SINGLE ADD */}
-                  {ownerSubTab === 'single' && (
-                    <form onSubmit={handleSingleAddSubmit} className="space-y-4">
-                      <div className="p-3 rounded-xl bg-[#FAF9F5] border border-[#E0E0D0] text-xs text-[#5A5A50]">
-                        Daftarkan seorang pelatih baharu terus ke dalam pangkalan data ILKKM Sungai Buloh.
-                      </div>
-
-                      {singleMsg && (
-                        <div
-                          className={`p-3 rounded-xl border text-xs flex items-center gap-2 ${
-                            singleMsg.success
-                              ? 'bg-[#EBF0E6] border-[#C8D6C4] text-[#33422C]'
-                              : 'bg-[#FDF2F0] border-[#EBD0C6] text-[#8E3220]'
-                          }`}
-                        >
-                          {singleMsg.success ? (
-                            <CheckCircle2 className="w-4 h-4 text-[#495E3F] shrink-0" />
-                          ) : (
-                            <AlertCircle className="w-4 h-4 text-[#C74B32] shrink-0" />
-                          )}
-                          <span>{singleMsg.text}</span>
-                        </div>
-                      )}
-
-                      <div>
-                        <label className="block text-xs font-bold text-[#5A5A50] uppercase tracking-wider mb-1">
-                          Nombor Matrik Pelatih:
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={singleMatric}
-                          onChange={(e) => setSingleMatric(e.target.value)}
-                          placeholder="Contoh: GCMT/2026/0550 atau ILKKMSB/2026/0150"
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-[#D0D0C0] text-xs font-mono font-bold uppercase focus:outline-none focus:ring-2 focus:ring-[#D98C70]"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-[#5A5A50] uppercase tracking-wider mb-1">
-                          Nama Penuh Pelatih:
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={singleName}
-                          onChange={(e) => setSingleName(e.target.value)}
-                          placeholder="Contoh: MOHAMAD SYAFIQ BIN ZAINAL"
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-[#D0D0C0] text-xs font-semibold uppercase focus:outline-none focus:ring-2 focus:ring-[#D98C70]"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-bold text-[#5A5A50] uppercase tracking-wider mb-1">
-                            Program:
-                          </label>
-                          <select
-                            value={singleProg}
-                            onChange={(e) => setSingleProg(e.target.value)}
-                            className="w-full px-3 py-2.5 rounded-xl border border-[#D0D0C0] text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-[#D98C70]"
-                          >
-                            <option value="Diploma Farmasi">Diploma Farmasi</option>
-                            <option value="Diploma Kesihatan Persekitaran">Diploma Kesihatan Persekitaran</option>
-                            <option value="Diploma Sains Kejururawatan">Diploma Sains Kejururawatan</option>
-                            <option value="Diploma Pembantu Pegawai Perubatan">Diploma Pembantu Pegawai Perubatan</option>
-                            <option value="Diploma Fisioterapi / Radiografi">Diploma Fisioterapi / Radiografi</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-bold text-[#5A5A50] uppercase tracking-wider mb-1">
-                            Kohort / Sesi:
-                          </label>
+                  {/* ==================================================== */}
+                  {/* SUB-PANEL 2: SENARAI REKOD 42 PELATIH                */}
+                  {/* ==================================================== */}
+                  {ownerSubTab === 'list' && (
+                    <div className="space-y-3 animate-in fade-in">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+                        <div className="relative flex-1">
+                          <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#7A7A6A]" />
                           <input
                             type="text"
-                            value={singleCohort}
-                            onChange={(e) => setSingleCohort(e.target.value)}
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-[#D0D0C0] text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#D98C70]"
+                            value={rosterSearch}
+                            onChange={(e) => setRosterSearch(e.target.value)}
+                            placeholder="Cari dalam senarai..."
+                            className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-[#D0D0C0] bg-white focus:outline-none focus:border-[#495E3F]"
                           />
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={handleCopyAllTrainees}
+                            className="px-3 py-2 rounded-xl bg-[#FAF9F5] border border-[#D0D0C0] hover:bg-[#EBF0E6] text-xs font-bold text-[#33422C] flex items-center gap-1.5 transition-colors cursor-pointer"
+                            title="Salin Semua Rekod"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>{copyFeedback ? 'Disalin! ✓' : 'Salin'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleDownloadCsv}
+                            className="px-3 py-2 rounded-xl bg-[#33422C] hover:bg-[#263622] text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                            title="Eksport ke fail CSV"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Muat Turun CSV</span>
+                          </button>
                         </div>
                       </div>
 
-                      <button
-                        type="submit"
-                        className="w-full py-3.5 px-5 rounded-2xl bg-[#D98C70] hover:bg-[#C7795C] text-white font-bold text-sm shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <UserPlus className="w-4 h-4" />
-                        <span>Daftarkan Pelatih Ini</span>
-                      </button>
-                    </form>
-                  )}
-
-                  {/* SUB-TAB 3: MANAGE ROSTER */}
-                  {ownerSubTab === 'list' && (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-bold text-[#5A5A50]">
-                          Senarai Pelatih Berdaftar ({registeredList.length} Orang)
-                        </span>
-
-                        <button
-                          onClick={handleCopyAllMatrics}
-                          className="px-3 py-1.5 rounded-xl border border-[#D0D0C0] bg-white hover:bg-[#FAF9F5] text-xs font-bold text-[#4A4A40] flex items-center gap-1.5 cursor-pointer"
-                          title="Salin semua senarai ke clipboard"
-                        >
-                          <Copy className="w-3.5 h-3.5 text-[#D98C70]" />
-                          <span>{copyFeedback ? 'Disalin! ✓' : 'Salin Semua'}</span>
-                        </button>
+                      <div className="text-xs text-[#55694D] font-semibold flex items-center justify-between">
+                        <span>Jumlah Pelatih Berdaftar: <strong>{registeredList.length} Orang</strong></span>
+                        <span>Paparan: {filteredRoster.length} rekod</span>
                       </div>
 
-                      <div className="relative">
-                        <Search className="w-4 h-4 text-[#8A8A7A] absolute left-3.5 top-3" />
-                        <input
-                          type="text"
-                          value={rosterSearch}
-                          onChange={(e) => setRosterSearch(e.target.value)}
-                          placeholder="Cari nombor matrik atau nama pelatih..."
-                          className="w-full pl-9 pr-4 py-2.5 text-xs rounded-xl border border-[#D0D0C0] focus:outline-none focus:ring-2 focus:ring-[#D98C70]"
-                        />
-                      </div>
-
-                      <div className="divide-y divide-[#E0E0D0] border border-[#E0E0D0] rounded-2xl overflow-hidden max-h-72 overflow-y-auto">
-                        {filteredRoster.map((t) => (
-                          <div 
-                            key={t.matricNumber} 
-                            className="p-3 bg-white hover:bg-[#FAF9F5] flex items-center justify-between gap-2 text-xs"
+                      {/* SENARAI JADUAL */}
+                      <div className="max-h-72 overflow-y-auto rounded-2xl border border-[#D0D0C0] divide-y divide-[#EAEAE0] bg-white text-xs">
+                        {filteredRoster.map((t, idx) => (
+                          <div
+                            key={t.icNumber + idx}
+                            className="p-3 flex items-center justify-between gap-3 hover:bg-[#FAF9F5] transition-colors"
                           >
-                            <div className="truncate pr-2">
+                            <div className="space-y-0.5 flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className="font-mono font-bold text-[#33422C]">
-                                  {t.matricNumber}
+                                <span className="font-bold text-[#142611] truncate">
+                                  {idx + 1}. {t.fullName}
                                 </span>
                                 <span
-                                  className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                                  className={`px-2 py-0.2 rounded-full text-[10px] font-bold ${
                                     t.status === 'Aktif'
-                                      ? 'bg-[#EBF0E6] text-[#495E3F]'
-                                      : 'bg-[#FDF2F0] text-[#8E3220]'
+                                      ? 'bg-[#EBF0E6] text-[#33422C]'
+                                      : 'bg-[#FDF5F2] text-[#A35C42]'
                                   }`}
                                 >
                                   {t.status}
                                 </span>
                               </div>
-                              <p className="font-semibold text-[#4A4A40] text-xs truncate mt-0.5">
-                                {t.fullName}
-                              </p>
-                              <p className="text-[11px] text-[#7A7A6A] truncate">
-                                {t.programme} • {t.cohort}
-                              </p>
+                              <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#68685C]">
+                                <span className="font-mono font-bold text-[#33422C]">
+                                  No. K/P: {t.icNumber}
+                                </span>
+                                {t.matricNumber && (
+                                  <span>• Matrik: {t.matricNumber}</span>
+                                )}
+                                <span>• {t.programme}</span>
+                              </div>
                             </div>
 
-                            <div className="flex items-center space-x-1 shrink-0">
+                            <div className="flex items-center gap-1.5 shrink-0">
                               <button
-                                onClick={() => handleToggleStatus(t.matricNumber)}
-                                className="px-2.5 py-1.5 rounded-lg border border-[#D0D0C0] text-[11px] font-bold text-[#5A5A50] hover:bg-[#F5F5F0] cursor-pointer"
-                                title="Tukar status pelatih"
+                                type="button"
+                                onClick={() => handleSwitchToTrainee(t)}
+                                className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[#EBF0E6] text-[#33422C] hover:bg-[#D8E6D3] transition-colors cursor-pointer flex items-center gap-1"
+                                title="Log masuk sebagai pelatih ini"
+                              >
+                                <Eye className="w-3 h-3" />
+                                <span>Pilih</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleToggleStatus(t.icNumber)}
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
+                                  t.status === 'Aktif'
+                                    ? 'bg-[#FDF5F2] text-[#A35C42] hover:bg-[#F5E2DA]'
+                                    : 'bg-[#EBF0E6] text-[#33422C] hover:bg-[#D5E2D0]'
+                                }`}
+                                title={t.status === 'Aktif' ? 'Gantung Akaun' : 'Aktifkan Semula'}
                               >
                                 {t.status === 'Aktif' ? 'Gantung' : 'Aktifkan'}
                               </button>
 
                               <button
-                                onClick={() => handleDeleteTrainee(t.matricNumber, t.fullName)}
-                                className="p-1.5 rounded-lg text-[#C74B32] hover:bg-[#FDF2F0] cursor-pointer"
-                                title="Padam daripada senarai"
+                                type="button"
+                                onClick={() => handleDeleteTrainee(t.icNumber, t.fullName)}
+                                className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                                title="Padam Pelatih"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           </div>
                         ))}
+
+                        {filteredRoster.length === 0 && (
+                          <div className="p-8 text-center text-[#7A7A6A]">
+                            Tiada rekod pelatih dijumpai.
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
 
-                  {/* SUB-TAB 4: SETTINGS */}
+                  {/* ==================================================== */}
+                  {/* SUB-PANEL 3: MUAT NAIK FAIL CSV                      */}
+                  {/* ==================================================== */}
+                  {ownerSubTab === 'upload' && (
+                    <div className="space-y-4 animate-in fade-in">
+                      <div className="p-4 rounded-2xl bg-[#FAF9F5] border border-[#E0E0D0] space-y-2 text-xs">
+                        <h5 className="font-bold text-[#33422C] flex items-center gap-2">
+                          <Upload className="w-4 h-4 text-[#D98C70]" />
+                          <span>Import Dokumen Fail MAKLUMAT PELATIH.csv</span>
+                        </h5>
+                        <p className="text-[#68685C] leading-relaxed">
+                          Anda boleh memuat naik fail fizikal <code>MAKLUMAT PELATIH.csv</code> terus daripada komputer/peranti anda, atau menampal data CSV di bawah. Sistem akan mengekstrak <strong>Nombor Kad Pengenalan</strong> dan <strong>Nama Penuh</strong> secara automatik.
+                        </p>
+
+                        <div className="flex items-center gap-3 pt-2">
+                          <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-[#33422C]">
+                            <input
+                              type="radio"
+                              name="replaceMode"
+                              checked={csvUploadReplace}
+                              onChange={() => setCsvUploadReplace(true)}
+                              className="accent-[#33422C]"
+                            />
+                            <span>Gantikan Sepenuhnya</span>
+                          </label>
+
+                          <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-[#33422C]">
+                            <input
+                              type="radio"
+                              name="replaceMode"
+                              checked={!csvUploadReplace}
+                              onChange={() => setCsvUploadReplace(false)}
+                              className="accent-[#33422C]"
+                            />
+                            <span>Tambah Ke Senarai Sedia Ada</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* ZON MUAT NAIK FAIL CSV */}
+                      <div 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-6 rounded-2xl border-2 border-dashed border-[#B8CEB1] bg-[#EFF5EC]/50 hover:bg-[#EFF5EC] text-center cursor-pointer transition-colors space-y-2 group"
+                      >
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".csv,text/csv,text/plain"
+                          onChange={handleFileUpload}
+                          className="hidden"
+                        />
+                        <div className="w-12 h-12 rounded-2xl bg-white border border-[#C8D6C4] flex items-center justify-center mx-auto text-[#495E3F] group-hover:scale-105 transition-transform shadow-xs">
+                          <Upload className="w-6 h-6" />
+                        </div>
+                        <h6 className="font-bold text-[#2A3B25] text-sm">
+                          Klik Di Sini Untuk Memilih Fail <code>MAKLUMAT PELATIH.csv</code>
+                        </h6>
+                        <p className="text-xs text-[#55694D]">
+                          Sokongan fail CSV dengan lajur No. Kad Pengenalan & Nama Penuh pelatih
+                        </p>
+                      </div>
+
+                      {uploadFeedback && (
+                        <div
+                          className={`p-4 rounded-2xl text-xs flex items-start gap-3 animate-in fade-in ${
+                            uploadFeedback.success
+                              ? 'bg-[#EBF0E6] border-2 border-[#C8D6C4] text-[#33422C]'
+                              : 'bg-[#FDF5F2] border-2 border-[#EBD0C6] text-[#A35C42]'
+                          }`}
+                        >
+                          {uploadFeedback.success ? (
+                            <CheckCircle2 className="w-5 h-5 text-[#495E3F] shrink-0 mt-0.5" />
+                          ) : (
+                            <AlertCircle className="w-5 h-5 text-[#D98C70] shrink-0 mt-0.5" />
+                          )}
+                          <div className="space-y-0.5">
+                            <strong className="block font-bold">
+                              {uploadFeedback.success ? 'Import Berjaya' : 'Ralat Import'}
+                            </strong>
+                            <p>{uploadFeedback.message}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* TAMPAL DATA CSV TEKS */}
+                      <form onSubmit={handlePasteCsvSubmit} className="space-y-3 pt-2">
+                        <label className="block text-xs font-bold text-[#33422C]">
+                          Atau Tampal Teks CSV / Senarai Terus di Bawah:
+                        </label>
+                        <textarea
+                          rows={4}
+                          value={rawCsvText}
+                          onChange={(e) => setRawCsvText(e.target.value)}
+                          placeholder="No. Kad Pengenalan, Nama Penuh, Program&#10;050114-10-1023, MUHAMMAD AMIRUL AIMAN, Diploma Farmasi"
+                          className="w-full p-3 rounded-xl border-2 border-[#D0D0C0] bg-white font-mono text-xs focus:outline-none focus:border-[#495E3F]"
+                        />
+
+                        <div className="flex items-center justify-between gap-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRawCsvText(exportTraineesToCsv());
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-[#FAF9F5] border border-[#D0D0C0] text-xs font-bold text-[#4A4A40] hover:bg-[#EBF0E6] transition-colors cursor-pointer"
+                          >
+                            Muatkan Contoh Format CSV
+                          </button>
+
+                          <button
+                            type="submit"
+                            className="py-2 px-5 rounded-xl bg-[#33422C] hover:bg-[#253220] text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                          >
+                            <FileText className="w-4 h-4" />
+                            <span>Proses Teks CSV</span>
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
+                  {/* ==================================================== */}
+                  {/* SUB-PANEL 4: TAMBAH INDIVIDU                         */}
+                  {/* ==================================================== */}
+                  {ownerSubTab === 'single' && (
+                    <form onSubmit={handleSingleAddSubmit} className="space-y-4 animate-in fade-in">
+                      <div className="p-4 rounded-2xl bg-[#FAF9F5] border border-[#E0E0D0] text-xs text-[#55694D]">
+                        Daftar pelatih baharu ke dalam sistem GCMT 2052 ILKKM Sungai Buloh.
+                      </div>
+
+                      {singleMsg && (
+                        <div
+                          className={`p-3 rounded-xl text-xs font-semibold ${
+                            singleMsg.success
+                              ? 'bg-[#EBF0E6] text-[#33422C] border border-[#C8D6C4]'
+                              : 'bg-[#FDF5F2] text-[#A35C42] border border-[#EBD0C6]'
+                          }`}
+                        >
+                          {singleMsg.text}
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div className="space-y-1">
+                          <label className="font-bold text-[#33422C]">No. Kad Pengenalan *</label>
+                          <input
+                            type="text"
+                            value={singleIc}
+                            onChange={(e) => setSingleIc(e.target.value)}
+                            placeholder="cth: 050114-10-1023"
+                            className="w-full p-2.5 rounded-xl border border-[#D0D0C0] font-mono"
+                            required
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="font-bold text-[#33422C]">No. Matrik (Pilihan)</label>
+                          <input
+                            type="text"
+                            value={singleMatric}
+                            onChange={(e) => setSingleMatric(e.target.value)}
+                            placeholder="cth: DPF/2026/043"
+                            className="w-full p-2.5 rounded-xl border border-[#D0D0C0] font-mono"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-2 space-y-1">
+                          <label className="font-bold text-[#33422C]">Nama Penuh Pelatih *</label>
+                          <input
+                            type="text"
+                            value={singleFullName}
+                            onChange={(e) => setSingleFullName(e.target.value)}
+                            placeholder="cth: MUHAMMAD HAZIQ BIN KAMAL"
+                            className="w-full p-2.5 rounded-xl border border-[#D0D0C0] uppercase font-bold"
+                            required
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="font-bold text-[#33422C]">Program</label>
+                          <select
+                            value={singleProg}
+                            onChange={(e) => setSingleProg(e.target.value)}
+                            className="w-full p-2.5 rounded-xl border border-[#D0D0C0] bg-white"
+                          >
+                            <option value="Diploma Farmasi">Diploma Farmasi</option>
+                            <option value="Diploma Kesihatan Persekitaran">Diploma Kesihatan Persekitaran</option>
+                            <option value="Sains Kesihatan Bersekutu">Sains Kesihatan Bersekutu</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="font-bold text-[#33422C]">Kohort / Sesi</label>
+                          <input
+                            type="text"
+                            value={singleCohort}
+                            onChange={(e) => setSingleCohort(e.target.value)}
+                            className="w-full p-2.5 rounded-xl border border-[#D0D0C0]"
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full py-3 rounded-xl bg-[#33422C] hover:bg-[#253220] text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        <span>Daftar Pelatih Ini</span>
+                      </button>
+                    </form>
+                  )}
+
+                  {/* ==================================================== */}
+                  {/* SUB-PANEL 5: TETAPAN & KATA LALUAN                   */}
+                  {/* ==================================================== */}
                   {ownerSubTab === 'settings' && (
-                    <div className="space-y-5">
-                      {/* Change Owner Password */}
-                      <form onSubmit={handleUpdatePassword} className="p-4 rounded-2xl border border-[#D0D0C0] bg-[#FAF9F5] space-y-3">
-                        <div className="flex items-center gap-2 font-bold text-xs text-[#4A4A40]">
+                    <div className="space-y-5 animate-in fade-in">
+                      {/* TUKAR KATA LALUAN OWNER */}
+                      <div className="p-4 rounded-2xl bg-[#FAF9F5] border border-[#E0E0D0] space-y-3 text-xs">
+                        <div className="flex items-center gap-2 font-bold text-[#33422C]">
                           <KeyRound className="w-4 h-4 text-[#D98C70]" />
-                          <span>Tukar Kata Laluan Owner / Pensyarah</span>
+                          <span>Tukar Kata Laluan Pengajar (Owner)</span>
                         </div>
 
                         {passUpdateMsg && (
                           <div
-                            className={`p-2.5 rounded-xl border text-xs flex items-center gap-2 ${
+                            className={`p-2.5 rounded-xl font-semibold ${
                               passUpdateMsg.success
-                                ? 'bg-[#EBF0E6] border-[#C8D6C4] text-[#33422C]'
-                                : 'bg-[#FDF2F0] border-[#EBD0C6] text-[#8E3220]'
+                                ? 'bg-[#EBF0E6] text-[#33422C] border border-[#C8D6C4]'
+                                : 'bg-[#FDF5F2] text-[#A35C42] border border-[#EBD0C6]'
                             }`}
                           >
-                            <span>{passUpdateMsg.text}</span>
+                            {passUpdateMsg.text}
                           </div>
                         )}
 
-                        <div className="flex gap-2">
+                        <form onSubmit={handleUpdatePassword} className="space-y-2">
                           <input
                             type="password"
-                            required
                             value={newOwnerPass}
                             onChange={(e) => setNewOwnerPass(e.target.value)}
                             placeholder="Kata laluan baharu..."
-                            className="flex-1 px-3 py-2 rounded-xl border border-[#D0D0C0] text-xs font-mono font-bold bg-white"
+                            className="w-full p-2.5 rounded-xl border border-[#D0D0C0] bg-white text-xs font-bold"
+                            required
                           />
                           <button
                             type="submit"
-                            className="px-4 py-2 rounded-xl bg-[#D98C70] hover:bg-[#C7795C] text-white text-xs font-bold cursor-pointer"
+                            className="px-4 py-2 rounded-xl bg-[#33422C] hover:bg-[#253220] text-white font-bold transition-colors cursor-pointer"
                           >
-                            Simpan
+                            Kemas Kini Kata Laluan
                           </button>
-                        </div>
-                      </form>
+                        </form>
+                      </div>
 
-                      {/* Reset to Default */}
-                      <div className="p-4 rounded-2xl border border-[#EBD0C6] bg-[#FFF9F6] flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-bold text-[#8E472D]">
-                            Tetapkan Semula ke Senarai Asal Kolej
-                          </p>
-                          <p className="text-[11px] text-[#7A554A]">
-                            Mengembalikan senarai pelatih kepada rekod asal ILKKM Sungai Buloh.
-                          </p>
-                        </div>
-
+                      {/* TETAPKAN SEMULA KE 42 PELATIH ASAL */}
+                      <div className="p-4 rounded-2xl bg-[#FAF9F5] border border-[#E0E0D0] space-y-2 text-xs">
+                        <h6 className="font-bold text-[#A35C42] flex items-center gap-1.5">
+                          <Trash2 className="w-4 h-4" />
+                          <span>Pulihkan Senarai Asal 42 Pelatih</span>
+                        </h6>
+                        <p className="text-[#68685C]">
+                          Jika senarai pelatih telah disunting dan anda ingin mengembalikannya kepada 42 pelatih rasmi ILKKM Sungai Buloh.
+                        </p>
                         <button
+                          type="button"
                           onClick={handleResetToDefault}
-                          className="px-3 py-2 rounded-xl bg-white border border-[#EBD0C6] hover:bg-[#FBE8E1] text-[#8E472D] text-xs font-bold flex items-center gap-1.5 cursor-pointer shrink-0"
+                          className="px-4 py-2 rounded-xl bg-[#FDF5F2] border border-[#EBD0C6] hover:bg-[#FBE8E1] text-[#A35C42] font-bold transition-colors cursor-pointer"
                         >
-                          <RefreshCw className="w-3.5 h-3.5" />
-                          <span>Reset</span>
+                          Tetapkan Semula ke 42 Pelatih Asal
                         </button>
                       </div>
                     </div>
                   )}
-
                 </div>
               )}
             </div>
           )}
-
         </div>
 
-        {/* Modal Footer */}
-        <div className="p-4 bg-[#FAF9F5] border-t border-[#E0E0D0] flex items-center justify-between text-xs text-[#7A7A6A]">
-          <span>Modul Terhad: Pelatih Berdaftar ILKKM Sungai Buloh Sahaja</span>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-white border border-[#D0D0C0] hover:bg-[#F5F5F0] text-[#5A5A50] font-bold text-xs cursor-pointer"
-          >
-            Tutup
-          </button>
-        </div>
+        {/* MODAL TRANSKRIP TERPERINCI PELATIH (JIKA DIPILIH OLEH PENGAJAR) */}
+        {selectedTraineeTranscript && (
+          <div className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in">
+            <div 
+              className="bg-white rounded-3xl max-w-2xl w-full max-h-[88vh] flex flex-col shadow-2xl overflow-hidden border border-[#D0D0C0]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-4 sm:p-5 bg-[#33422C] text-white flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] font-bold text-[#A6BF9F] uppercase tracking-wider block">
+                    Transkrip Penilaian Pelatih
+                  </span>
+                  <h4 className="text-base sm:text-lg font-black">
+                    {selectedTraineeTranscript.fullName}
+                  </h4>
+                  <p className="text-xs text-white/80 font-mono">
+                    K/P: {selectedTraineeTranscript.icNumber} • {selectedTraineeTranscript.programme}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedTraineeTranscript(null)}
+                  className="p-2 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-5 overflow-y-auto space-y-4 text-xs">
+                {/* RINGKASAN SKOR */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="p-3 rounded-2xl bg-[#FAF9F5] border border-[#D0D0C0] text-center">
+                    <span className="text-[11px] text-[#7A7A6A] block">Purata Skor</span>
+                    <strong className="text-xl font-black text-[#33422C]">
+                      {selectedTraineeTranscript.averageScore}%
+                    </strong>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-[#EBF0E6] border border-[#C8D6C4] text-center">
+                    <span className="text-[11px] text-[#495E3F] block">Gred Keseluruhan</span>
+                    <strong className="text-xl font-black text-[#23311E]">
+                      {selectedTraineeTranscript.grade}
+                    </strong>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-[#FAF9F5] border border-[#D0D0C0] text-center">
+                    <span className="text-[11px] text-[#7A7A6A] block">Skor Tertinggi</span>
+                    <strong className="text-xl font-black text-[#D98C70]">
+                      {selectedTraineeTranscript.highestScore}%
+                    </strong>
+                  </div>
+                </div>
+
+                {/* SENARAI PERCUBAAN KUIZ */}
+                <div className="space-y-2">
+                  <h5 className="font-bold text-[#33422C] flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-[#D98C70]" />
+                    <span>Rekod Percubaan ({selectedTraineeTranscript.attempts.length})</span>
+                  </h5>
+
+                  <div className="divide-y divide-[#EAEAE0] rounded-2xl border border-[#D0D0C0] overflow-hidden bg-white">
+                    {selectedTraineeTranscript.attempts.map((att, idx) => (
+                      <div key={att.id || idx} className="p-3 flex items-center justify-between gap-2 hover:bg-[#FAF9F5]">
+                        <div className="space-y-0.5">
+                          <span className="font-bold text-[#142611] block">
+                            {att.topicTitle}
+                          </span>
+                          <span className="text-[11px] text-[#6A6A5E] block">
+                            Mod: {att.mode === 'timed' ? '⚡ Ujian Pantas' : 'Latihan Kendiri'} • Masa: {Math.round(att.timeSpentSeconds / 60)} min
+                          </span>
+                          <span className="text-[10px] text-[#8A8A7A]">
+                            Tarikh: {new Date(att.date).toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </span>
+                        </div>
+
+                        <div className="text-right">
+                          <span className={`text-sm font-black block ${att.score >= 80 ? 'text-[#33422C]' : 'text-[#8E472D]'}`}>
+                            {att.score}%
+                          </span>
+                          <span className="text-[10px] text-[#6A6A5E]">
+                            {att.correctCount}/{att.totalQuestions} Betul
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* BUTANG TINDAKAN MODAL TRANSKRIP */}
+              <div className="p-4 bg-[#FAF9F5] border-t border-[#D0D0C0] flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = registeredList.find((t) => t.icNumber === selectedTraineeTranscript.icNumber);
+                    if (target) {
+                      setSelectedTraineeTranscript(null);
+                      handleSwitchToTrainee(target);
+                    }
+                  }}
+                  className="px-4 py-2 rounded-xl bg-[#33422C] hover:bg-[#23311E] text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Eye className="w-4 h-4 text-[#A6BF9F]" />
+                  <span>Log Masuk Sebagai Pelatih Ini</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedTraineeTranscript(null)}
+                  className="px-4 py-2 rounded-xl bg-white border border-[#D0D0C0] text-xs font-bold text-[#4A4A40] hover:bg-[#EBF0E6] transition-colors cursor-pointer"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

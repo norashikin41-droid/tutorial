@@ -46,6 +46,9 @@ export interface QuizAttempt {
   timeSpentSeconds: number;
   date: string;
   answers: UserAnswerRecord[];
+  studentIc?: string;
+  studentName?: string;
+  studentMatric?: string;
 }
 
 export interface ReminderSettings {
@@ -57,6 +60,7 @@ export interface ReminderSettings {
 
 export interface UserProfile {
   name: string;
+  icNumber?: string;
   matricNumber?: string;
   institution?: string;
   programme?: string;
@@ -81,19 +85,38 @@ export interface UnitCertificateInfo {
 }
 
 export interface RegisteredTrainee {
-  matricNumber: string;
-  fullName: string;
-  programme: string;
-  institution: string;
-  cohort: string;
+  icNumber: string; // Nombor Kad Pengenalan rasmi
+  fullName: string; // Nama Penuh rasmi
+  matricNumber?: string; // No Matrik (jika ada)
+  programme: string; // Diploma Farmasi / Diploma Kesihatan Persekitaran
+  institution: string; // ILKKM Sungai Buloh
+  cohort: string; // Sesi 2026/2027
   registrationDate: string;
   status: 'Aktif' | 'Digantung';
 }
 
 export interface MatricAuthSession {
   isVerified: boolean;
+  icNumber: string | null;
   matricNumber: string | null;
   studentName: string | null;
   programme: string | null;
   verifiedAt: string | null;
 }
+
+export interface TraineeAssessmentSummary {
+  icNumber: string;
+  fullName: string;
+  matricNumber?: string;
+  programme: string;
+  status: 'Aktif' | 'Digantung';
+  totalAttempts: number;
+  completedTopics: number[];
+  averageScore: number;
+  highestScore: number;
+  grade: 'A' | 'B' | 'C' | 'D' | 'F' | 'Belum Dinilai';
+  isEvaluated: boolean;
+  lastAttemptDate: string | null;
+  attempts: QuizAttempt[];
+}
+

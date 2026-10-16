@@ -11,7 +11,8 @@ import {
   GraduationCap,
   ShieldCheck,
   Lock,
-  KeyRound
+  KeyRound,
+  LogOut
 } from 'lucide-react';
 import { UserProfile, MatricAuthSession } from '../types';
 
@@ -23,6 +24,7 @@ interface HeaderProps {
   onOpenReminderModal: () => void;
   onOpenCertificate: () => void;
   onOpenMatricModal: () => void;
+  onLogout: () => void;
   bookmarkedCount: number;
 }
 
@@ -34,6 +36,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenReminderModal,
   onOpenCertificate,
   onOpenMatricModal,
+  onLogout,
   bookmarkedCount,
 }) => {
   const masteryPercentage = Math.round(
@@ -66,34 +69,43 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Quick Stats & Utilities */}
           <div className="flex items-center space-x-2 sm:space-x-3">
             
-            {/* Matric Auth Status Button */}
-            <button
-              id="header-matric-auth-btn"
-              onClick={onOpenMatricModal}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-2xl border text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer ${
-                matricSession.isVerified && matricSession.matricNumber
-                  ? 'bg-[#EBF0E6] border-[#C8D6C4] text-[#33422C] hover:bg-[#DCE7D6]'
-                  : 'bg-[#FDF5F2] border-[#EBD0C6] text-[#8E472D] hover:bg-[#FBE8E1]'
-              }`}
-              title={
-                matricSession.isVerified && matricSession.matricNumber
-                  ? `Pelatih Disahkan: ${matricSession.matricNumber} (${matricSession.studentName})`
-                  : 'Klik untuk sahkan Nombor Matrik ILKKM Sungai Buloh'
-              }
-            >
-              {matricSession.isVerified && matricSession.matricNumber ? (
-                <>
-                  <ShieldCheck className="w-4 h-4 text-[#495E3F]" />
-                  <span className="hidden sm:inline font-mono">{matricSession.matricNumber}</span>
-                  <span className="sm:hidden font-mono">Disahkan</span>
-                </>
-              ) : (
-                <>
-                  <Lock className="w-4 h-4 text-[#D98C70]" />
-                  <span>Sahkan Matrik</span>
-                </>
-              )}
-            </button>
+            {/* Matric Auth Status & Logout Button */}
+            {matricSession.isVerified && (matricSession.icNumber || matricSession.matricNumber) ? (
+              <div className="flex items-center gap-1 bg-[#EBF0E6] border border-[#C8D6C4] rounded-2xl p-1 shadow-2xs">
+                <button
+                  id="header-matric-auth-btn"
+                  onClick={onOpenMatricModal}
+                  className="flex items-center space-x-1.5 px-2.5 py-1 text-xs sm:text-sm font-bold text-[#33422C] hover:text-[#1F291B] transition-colors cursor-pointer"
+                  title={`Pelatih: ${matricSession.studentName} (${matricSession.icNumber}) - Klik untuk profil atau panel pengajar`}
+                >
+                  <ShieldCheck className="w-4 h-4 text-[#495E3F] shrink-0" />
+                  <span className="font-mono truncate max-w-[100px] sm:max-w-[140px]">
+                    {matricSession.studentName?.split(' ')[0] || 'Pelatih'}
+                  </span>
+                </button>
+
+                <button
+                  id="header-logout-btn"
+                  onClick={onLogout}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white hover:bg-[#FDF5F2] text-[#A35C42] hover:text-[#8E472D] border border-[#C8D6C4] text-xs font-bold transition-all shadow-2xs cursor-pointer"
+                  title="Log Keluar untuk Melihat Pelatih Lain"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-[#D98C70]" />
+                  <span className="hidden sm:inline">Log Keluar</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                id="header-matric-auth-btn"
+                onClick={onOpenMatricModal}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-2xl border text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer bg-[#FDF5F2] border-[#EBD0C6] text-[#8E472D] hover:bg-[#FBE8E1]"
+                title="Klik untuk log masuk Pelatih ILKKM Sungai Buloh"
+              >
+                <Lock className="w-4 h-4 text-[#D98C70]" />
+                <span>Log Masuk</span>
+              </button>
+            )}
+
 
             {/* Streak Counter */}
             <div 

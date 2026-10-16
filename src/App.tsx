@@ -26,7 +26,8 @@ import {
   saveReminderSettings,
   resetAllProgress 
 } from './utils/storage';
-import { getMatricSession } from './utils/matricAuth';
+import { getMatricSession, logoutMatricSession } from './utils/matricAuth';
+import { recordTraineeQuizAttempt } from './utils/assessmentStorage';
 import { checkAndTriggerDailyReminder } from './utils/notification';
 import { Question, QuizAttempt, UserProfile, ReminderSettings, MatricAuthSession } from './types';
 import { 
@@ -75,7 +76,7 @@ export function App() {
     checkAndTriggerDailyReminder();
   }, []);
 
-  const isVerifiedStudent = matricSession.isVerified && !!matricSession.matricNumber;
+  const isVerifiedStudent = matricSession.isVerified && (!!matricSession.icNumber || !!matricSession.matricNumber);
 
   const handleStartTopicQuiz = (topicId: number, mode: 'practice' | 'timed') => {
     const topic = allTopics.find((t) => t.id === topicId);
@@ -138,11 +139,26 @@ export function App() {
   };
 
   const handleFinishQuiz = (attempt: QuizAttempt) => {
-    saveQuizAttempt(attempt);
+    const enrichedAttempt: QuizAttempt = {
+      ...attempt,
+      studentIc: matricSession.icNumber || undefined,
+      studentName: matricSession.studentName || undefined,
+      studentMatric: matricSession.matricNumber || undefined,
+    };
+    saveQuizAttempt(enrichedAttempt);
+    recordTraineeQuizAttempt(enrichedAttempt, matricSession.icNumber, matricSession.studentName);
     setAttempts(getStoredAttempts());
     setUserProfile(getStoredProfile());
-    setLatestAttempt(attempt);
+    setLatestAttempt(enrichedAttempt);
     setActiveQuiz(null);
+  };
+
+  const handleLogout = () => {
+    logoutMatricSession();
+    setMatricSession(getMatricSession());
+    setUserProfile(getStoredProfile());
+    setAuthRequiredAction(null);
+    setIsMatricAuthOpen(true);
   };
 
   const handleToggleBookmark = (questionId: string) => {
@@ -187,6 +203,7 @@ export function App() {
           setAuthRequiredAction(null);
           setIsMatricAuthOpen(true);
         }}
+        onLogout={handleLogout}
         bookmarkedCount={bookmarkedIds.length}
       />
 
@@ -285,7 +302,7 @@ export function App() {
                     className="flex items-center space-x-2 px-6 py-3.5 rounded-2xl bg-[#5A5A50] hover:bg-[#68685C] text-white font-semibold text-xs sm:text-sm transition-all border border-[#707062] cursor-pointer"
                   >
                     <BookOpen className="w-4 h-4" />
-                    <span>Lihat Formula Rasmi</span>
+                    <span>Buku Rumus Rasmi (GCMT 2052)</span>
                   </button>
                 </div>
               </div>

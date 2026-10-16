@@ -180,96 +180,66 @@ export const allQuestions: Question[] = [
   ...topicQuestionMap[10],
 ];
 
+import { OFFICIAL_GCMT_FORMULAS } from './officialFormulas';
+
+// Buku rumus rasmi GCMT 2052 - HANYA mengandungi 27 rumus yang telah dimuat naik
 export const formulaReferenceList = [
   {
-    category: 'Unit 1: Basic Mathematics Skills',
+    category: 'Unit 2: Laju Purata',
     formulas: [
-      { name: 'Penukaran Jisim', formula: '1 g = 1,000 mg = 1,000,000 mcg' },
-      { name: 'Penukaran Isipadu', formula: '1 L = 1,000 mL = 1,000 cm³' },
-      { name: 'Kadar Aliran Pam Infusi', formula: 'Kadar (mL/jam) = Isipadu (mL) ÷ Masa (jam)' },
-      { name: 'Kadar Titisan (Drip Rate)', formula: 'Titis/min = [Isipadu (mL) × Faktor Titisan] ÷ [Masa (jam) × 60]' },
-      { name: 'Kepekatan Peratusan (w/v)', formula: 'X% (w/v) = X gram bahan aktif dalam 100 mL larutan' },
+      { name: 'Rumus 3: Laju Purata', formula: 'Laju purata = Jumlah jarak ÷ Jumlah masa' },
     ],
   },
   {
-    category: 'Unit 2: Ratio, Proportion & Rates',
+    category: 'Unit 6: Indeks & Logaritma',
     formulas: [
-      { name: 'Nisbah Kepekatan', formula: 'Ratio Strength 1 : N = 1 g / N mL' },
-      { name: 'Skala Linear Peta', formula: 'Jarak Sebenar = Jarak Peta × Skala Linear (n)' },
-      { name: 'Skala Luas Peta', formula: 'Luas Sebenar = Luas Peta × (Skala Linear)²' },
+      { name: 'Rumus 1: Hukum Indeks (Pendaraban)', formula: 'aᵐ × aⁿ = aᵐ⁺ⁿ' },
+      { name: 'Rumus 2: Hukum Indeks (Kuasa)', formula: '(aᵐ)ⁿ = aᵐⁿ' },
+      { name: 'Rumus 16: Hukum Indeks (Pembahagian)', formula: 'aᵐ ÷ aⁿ = aᵐ⁻ⁿ' },
+      { name: 'Rumus 17: Hukum Indeks (Pecahan)', formula: 'aᵐ/ⁿ = (aᵐ)¹/ⁿ' },
+      { name: 'Rumus 13: Hukum Logaritma (Pembahagian)', formula: 'logₐ (m ÷ n) = logₐ m - logₐ n' },
+      { name: 'Rumus 14: Penukaran Asas Logaritma', formula: 'logₐ b = (log꜀ b) ÷ (log꜀ a)' },
+      { name: 'Rumus 27: Hukum Logaritma (Pendaraban)', formula: 'logₐ mn = logₐ m + logₐ n' },
+      { name: 'Rumus 28: Hukum Logaritma (Kuasa)', formula: 'logₐ mⁿ = n logₐ m' },
     ],
   },
   {
-    category: 'Unit 3: Algebra',
+    category: 'Unit 7: Garis Lurus',
     formulas: [
-      { name: 'Kuasa Dua Sempurna', formula: '(a + b)² = a² + 2ab + b² ; (a - b)² = a² - 2ab + b²' },
-      { name: 'Beza Dua Kuasa Dua', formula: 'a² - b² = (a - b)(a + b)' },
+      { name: 'Rumus 4: Kecerunan dari Pintasan', formula: 'm = - (Pintasan-y ÷ Pintasan-x)' },
+      { name: 'Rumus 18: Kecerunan dari Dua Titik', formula: 'm = (y₂ - y₁) ÷ (x₂ - x₁)' },
     ],
   },
   {
-    category: 'Unit 4: Linear Inequalities',
+    category: 'Unit 8: Persamaan Kuadratik',
     formulas: [
-      { name: 'Penyongsangan Tanda Ketaksamaan', formula: 'Apabila mendarab / membahagi dengan nombor negatif, tukar tanda: a < b <=> -a > -b' },
-      { name: 'Ketaksamaan Serentak', formula: 'a < x ≤ b (Persilangan kawasan garis nombor)' },
+      { name: 'Rumus 12: Rumus Kuadratik', formula: 'x = [-b ± √(b² - 4ac)] ÷ 2a' },
     ],
   },
   {
-    category: 'Unit 5: Simultaneous Equation',
+    category: 'Unit 9: Geometri Pepejal & Sukatan',
     formulas: [
-      { name: 'Kaedah Penggantian', formula: 'Ungkapkan y = f(x) dan ganti ke dalam persamaan kedua' },
-      { name: 'Kaedah Penghapusan', formula: 'Samakan pekali bagi satu pemboleh ubah lalu tambah atau tolak kedua-dua persamaan' },
+      { name: 'Rumus 5: Isi Padu Sfera', formula: 'Isi padu sfera = ⁴/₃ π j³' },
+      { name: 'Rumus 7: Luas Bulatan', formula: 'Luas bulatan = π j²' },
+      { name: 'Rumus 8: Luas Permukaan Silinder', formula: 'Luas permukaan silinder = 2π j² + 2π jt' },
+      { name: 'Rumus 9: Luas Permukaan Sfera', formula: 'Luas permukaan sfera = 4π j²' },
+      { name: 'Rumus 10: Isi Padu Silinder', formula: 'Isi padu silinder = π j² t' },
+      { name: 'Rumus 19: Isi Padu Kon', formula: 'Isi padu kon = ¹/₃ π j² t' },
+      { name: 'Rumus 20: Isi Padu Piramid', formula: 'Isi padu piramid = ¹/₃ × Luas tapak × Tinggi' },
+      { name: 'Rumus 21: Lilitan Bulatan', formula: 'Lilitan bulatan = π d = 2π j' },
+      { name: 'Rumus 22: Luas Trapezium', formula: 'Luas trapezium = ¹/₂ × (Hasil tambah 2 sisi selari) × Tinggi' },
+      { name: 'Rumus 23: Luas Permukaan Kon', formula: 'Luas permukaan kon = π j² + π js' },
+      { name: 'Rumus 24: Isi Padu Prisma', formula: 'Isi padu prisma = Luas keratan rentas × Tinggi' },
     ],
   },
   {
-    category: 'Unit 6: Indices & Logarithms',
+    category: 'Unit 10: Teorem & Trigonometri',
     formulas: [
-      { name: 'Hukum Hasil Darab/Bahagi Indeks', formula: 'aᵐ × aⁿ = aᵐ⁺ⁿ ; aᵐ ÷ aⁿ = aᵐ⁻ⁿ ; (aᵐ)ⁿ = aᵐⁿ' },
-      { name: 'Indeks Negatif & Sifar', formula: 'a⁻ⁿ = 1 / aⁿ ; a⁰ = 1' },
-      { name: 'Hubungan Bentuk Indeks & Log', formula: 'logₐ y = x <=> y = aˣ' },
-      { name: 'Hukum Asas Logaritma', formula: 'logₐ (xy) = logₐ x + logₐ y ; logₐ (x/y) = logₐ x - logₐ y ; logₐ (xⁿ) = n logₐ x' },
-      { name: 'Penukaran Asas Logaritma', formula: 'logₐ b = log꜀ b / log꜀ a' },
-      { name: 'Formula pH', formula: 'pH = -log₁₀ [H⁺]' },
-    ],
-  },
-  {
-    category: 'Unit 7: Straight Line',
-    formulas: [
-      { name: 'Kecerunan Dua Titik', formula: 'm = (y₂ - y₁) / (x₂ - x₁)' },
-      { name: 'Kecerunan dari Pintasan', formula: 'm = - (pintasan-y / pintasan-x)' },
-      { name: 'Bentuk Kecerunan-Pintasan', formula: 'y = mx + c (c = pintasan-y)' },
-      { name: 'Bentuk Pintasan', formula: 'x/a + y/b = 1 (a = pintasan-x, b = pintasan-y)' },
-      { name: 'Garis Selari & Berserenjang', formula: 'Selari: m₁ = m₂ ; Berserenjang: m₁ × m₂ = -1' },
-    ],
-  },
-  {
-    category: 'Unit 8: Quadratic Equation & Function',
-    formulas: [
-      { name: 'Rumus Kuadratik', formula: 'x = [-b ± √(b² - 4ac)] / (2a)' },
-      { name: 'Hasil Tambah Punca (HTP / SOR)', formula: 'HTP (α + β) = -b / a' },
-      { name: 'Hasil Darab Punca (HDP / POR)', formula: 'HDP (αβ) = c / a' },
-      { name: 'Bentukkan Persamaan Kuadratik', formula: 'x² - (HTP)x + (HDP) = 0' },
-      { name: 'Bentuk Verteks', formula: 'f(x) = a(x - h)² + k => Titik Pusingan (h, k)' },
-      { name: 'Paksi Simetri', formula: 'x = -b / (2a)' },
-    ],
-  },
-  {
-    category: 'Unit 9: Solid Geometry',
-    formulas: [
-      { name: 'Silinder', formula: 'Isipadu = πr²h ; Luas Melengkung = 2πrh ; Luas Tertutup = 2πr(r + h)' },
-      { name: 'Kon', formula: 'Isipadu = 1/3 πr²h ; Luas Permukaan = πr² + πrs (s = √(r² + h²))' },
-      { name: 'Sfera & Hemisfera', formula: 'Isipadu Sfera = 4/3 πr³ ; Isipadu Hemisfera = 2/3 πr³ ; Luas Hemisfera Pepejal = 3πr²' },
-      { name: 'Piramid & Prisma', formula: 'Isipadu Piramid = 1/3 × Luas Tapak × h ; Isipadu Prisma = Luas Keratan Rentas × Panjang' },
-      { name: 'Kubus & Kuboid', formula: 'Isipadu Kubus = s³ (Luas = 6s²) ; Isipadu Kuboid = p × l × t' },
-    ],
-  },
-  {
-    category: 'Unit 10: Trigonometry',
-    formulas: [
-      { name: 'Nisbah Resiprokal', formula: 'sek θ = 1 / kos θ ; kosek θ = 1 / sin θ ; kot θ = 1 / tan θ' },
-      { name: 'Petua Sinus', formula: 'a / sin A = b / sin B = c / sin C' },
-      { name: 'Petua Kosinus (Mencari Sisi)', formula: 'a² = b² + c² - 2bc kos A' },
-      { name: 'Petua Kosinus (Mencari Sudut)', formula: 'kos A = (b² + c² - a²) / (2bc)' },
-      { name: 'Luas Segi Tiga Bukan Bersudut Tegak', formula: 'Luas = 1/2 ab sin C = 1/2 bc sin A = 1/2 ac sin B' },
+      { name: 'Rumus 6: Teorem Pihagoras', formula: 'c² = a² + b²' },
+      { name: 'Rumus 11: Petua Sinus', formula: 'a / sin A = b / sin B = c / sin C' },
+      { name: 'Rumus 25: Petua Kosinus', formula: 'a² = b² + c² - 2bc cos A' },
+      { name: 'Rumus 26: Luas Segitiga', formula: 'Luas segitiga = ¹/₂ ab sin C' },
     ],
   },
 ];
+
