@@ -59,11 +59,11 @@ export const MatricLockBanner: React.FC<MatricLockBannerProps> = ({
           <div className="flex items-center space-x-2">
             <span className="font-bold text-[#8E472D] text-sm">Akses Soalan Dihadkan</span>
             <span className="px-2 py-0.5 rounded-full bg-[#EBD0C6] text-[#8E472D] text-[10px] font-bold">
-              42 Pelatih Berdaftar Sahaja
+              Pelatih Berdaftar Sahaja
             </span>
           </div>
           <p className="text-xs text-[#7A554A] mt-1 leading-relaxed">
-            Bank soalan dan ujian pantas GCMT 2052 ILKKM Sungai Buloh dikunci bagi memastikan hanya 42 pelatih berdaftar rasmi sesi ini dapat mengakses soalan. Sila log masuk menggunakan <strong>Nombor Kad Pengenalan</strong> dan <strong>Nama Penuh</strong> anda.
+            Bank soalan dan ujian pantas GCMT 2052 ILKKM Sungai Buloh dikunci bagi memastikan hanya pelatih berdaftar yang dimasukkan oleh pengajar dapat mengakses soalan. Sila log masuk menggunakan <strong>Nombor Kad Pengenalan</strong> dan <strong>Nama Penuh</strong> anda.
           </p>
         </div>
       </div>

@@ -1,7 +1,7 @@
 import { QuizAttempt, TraineeAssessmentSummary, RegisteredTrainee } from '../types';
 import { getRegisteredTrainees, normalizeIcNumber } from './matricAuth';
 
-const TRAINEE_ASSESSMENTS_KEY = 'gcmt2052_trainee_assessments_store_v2';
+const TRAINEE_ASSESSMENTS_KEY = 'gcmt2052_trainee_assessments_store_v3';
 
 // Kira gred berdasarkan markah purata
 export const calculateGrade = (score: number): 'A' | 'B' | 'C' | 'D' | 'F' => {
@@ -12,202 +12,17 @@ export const calculateGrade = (score: number): 'A' | 'B' | 'C' | 'D' | 'F' => {
   return 'F';
 };
 
-// Data penilaian awal (sebenar & realistik) untuk beberapa pelatih ILKKM Sungai Buloh bagi rujukan pengajar
-const initialSeededAssessments: Record<string, QuizAttempt[]> = {
-  // 050114-10-1023: MUHAMMAD AMIRUL AIMAN BIN ZULKIFLI
-  '050114101023': [
-    {
-      id: 'att-amirul-1',
-      topicId: 1,
-      topicTitle: 'Unit 1: Basic Mathematics Skills',
-      mode: 'practice',
-      totalQuestions: 15,
-      correctCount: 14,
-      score: 93,
-      timeSpentSeconds: 430,
-      date: '2026-02-10T09:30:00.000Z',
-      answers: [],
-      studentIc: '050114-10-1023',
-      studentName: 'MUHAMMAD AMIRUL AIMAN BIN ZULKIFLI',
-    },
-    {
-      id: 'att-amirul-2',
-      topicId: 2,
-      topicTitle: 'Unit 2: Linear & Quadratic Equations',
-      mode: 'timed',
-      totalQuestions: 15,
-      correctCount: 13,
-      score: 87,
-      timeSpentSeconds: 520,
-      date: '2026-02-12T14:15:00.000Z',
-      answers: [],
-      studentIc: '050114-10-1023',
-      studentName: 'MUHAMMAD AMIRUL AIMAN BIN ZULKIFLI',
-    },
-    {
-      id: 'att-amirul-3',
-      topicId: 3,
-      topicTitle: 'Unit 3: Simultaneous Equations',
-      mode: 'timed',
-      totalQuestions: 15,
-      correctCount: 15,
-      score: 100,
-      timeSpentSeconds: 410,
-      date: '2026-02-14T11:00:00.000Z',
-      answers: [],
-      studentIc: '050114-10-1023',
-      studentName: 'MUHAMMAD AMIRUL AIMAN BIN ZULKIFLI',
-    },
-  ],
-  // 050218-14-5210: NUR FARISHA BINTI MOHD FAIZAL
-  '050218145210': [
-    {
-      id: 'att-farisha-1',
-      topicId: 1,
-      topicTitle: 'Unit 1: Basic Mathematics Skills',
-      mode: 'practice',
-      totalQuestions: 15,
-      correctCount: 15,
-      score: 100,
-      timeSpentSeconds: 380,
-      date: '2026-02-11T10:00:00.000Z',
-      answers: [],
-      studentIc: '050218-14-5210',
-      studentName: 'NUR FARISHA BINTI MOHD FAIZAL',
-    },
-    {
-      id: 'att-farisha-2',
-      topicId: 4,
-      topicTitle: 'Unit 4: Geometry & Trigonometry',
-      mode: 'timed',
-      totalQuestions: 15,
-      correctCount: 14,
-      score: 93,
-      timeSpentSeconds: 480,
-      date: '2026-02-13T16:20:00.000Z',
-      answers: [],
-      studentIc: '050218-14-5210',
-      studentName: 'NUR FARISHA BINTI MOHD FAIZAL',
-    },
-  ],
-  // 050309-10-6421: MUHAMMAD DANIAL BIN MOHD ROSLI
-  '050309106421': [
-    {
-      id: 'att-danial-1',
-      topicId: 1,
-      topicTitle: 'Unit 1: Basic Mathematics Skills',
-      mode: 'practice',
-      totalQuestions: 15,
-      correctCount: 11,
-      score: 73,
-      timeSpentSeconds: 610,
-      date: '2026-02-09T08:45:00.000Z',
-      answers: [],
-      studentIc: '050309-10-6421',
-      studentName: 'MUHAMMAD DANIAL BIN MOHD ROSLI',
-    },
-  ],
-  // 050412-08-3318: SITI NURHALIZA BINTI KAMARUDDIN
-  '050412083318': [
-    {
-      id: 'att-siti-1',
-      topicId: 1,
-      topicTitle: 'Unit 1: Basic Mathematics Skills',
-      mode: 'timed',
-      totalQuestions: 15,
-      correctCount: 14,
-      score: 93,
-      timeSpentSeconds: 405,
-      date: '2026-02-08T15:10:00.000Z',
-      answers: [],
-      studentIc: '050412-08-3318',
-      studentName: 'SITI NURHALIZA BINTI KAMARUDDIN',
-    },
-    {
-      id: 'att-siti-2',
-      topicId: 5,
-      topicTitle: 'Unit 5: Statistics & Probability',
-      mode: 'timed',
-      totalQuestions: 15,
-      correctCount: 13,
-      score: 87,
-      timeSpentSeconds: 490,
-      date: '2026-02-14T09:15:00.000Z',
-      answers: [],
-      studentIc: '050412-08-3318',
-      studentName: 'SITI NURHALIZA BINTI KAMARUDDIN',
-    },
-  ],
-  // 050702-08-4425: DANISH IRFAN BIN ZAHARIN
-  '050702084425': [
-    {
-      id: 'att-danish-1',
-      topicId: 1,
-      topicTitle: 'Unit 1: Basic Mathematics Skills',
-      mode: 'practice',
-      totalQuestions: 15,
-      correctCount: 12,
-      score: 80,
-      timeSpentSeconds: 510,
-      date: '2026-02-12T11:40:00.000Z',
-      answers: [],
-      studentIc: '050702-08-4425',
-      studentName: 'DANISH IRFAN BIN ZAHARIN',
-    },
-    {
-      id: 'att-danish-2',
-      topicId: 2,
-      topicTitle: 'Unit 2: Linear & Quadratic Equations',
-      mode: 'practice',
-      totalQuestions: 15,
-      correctCount: 11,
-      score: 73,
-      timeSpentSeconds: 580,
-      date: '2026-02-15T14:00:00.000Z',
-      answers: [],
-      studentIc: '050702-08-4425',
-      studentName: 'DANISH IRFAN BIN ZAHARIN',
-    },
-  ],
-  // 050122-10-5541: AHMAD ZULKIFLI BIN HASSAN
-  '050122105541': [
-    {
-      id: 'att-zulkifli-1',
-      topicId: 1,
-      topicTitle: 'Unit 1: Basic Mathematics Skills',
-      mode: 'timed',
-      totalQuestions: 15,
-      correctCount: 15,
-      score: 100,
-      timeSpentSeconds: 360,
-      date: '2026-02-13T10:15:00.000Z',
-      answers: [],
-      studentIc: '050122-10-5541',
-      studentName: 'AHMAD ZULKIFLI BIN HASSAN',
-    },
-  ],
-  // 050209-10-9225: AIDIL ZAFRAN BIN RAMLI
-  '050209109225': [
-    {
-      id: 'att-aidil-1',
-      topicId: 1,
-      topicTitle: 'Unit 1: Basic Mathematics Skills',
-      mode: 'timed',
-      totalQuestions: 15,
-      correctCount: 13,
-      score: 87,
-      timeSpentSeconds: 460,
-      date: '2026-02-14T15:30:00.000Z',
-      answers: [],
-      studentIc: '050209-10-9225',
-      studentName: 'AIDIL ZAFRAN BIN RAMLI',
-    },
-  ],
-};
+// Data penilaian awal dikosongkan (penilaian sebenar akan direkodkan apabila pelatih mengambil kuiz)
+const initialSeededAssessments: Record<string, QuizAttempt[]> = {};
 
 // Dapatkan keseluruhan peta penilaian pelatih
 export const getTraineeAssessmentsMap = (): Record<string, QuizAttempt[]> => {
   try {
+    if (typeof window !== "undefined") {
+      if (localStorage.getItem("gcmt2052_trainee_assessments_store_v2")) {
+        localStorage.removeItem("gcmt2052_trainee_assessments_store_v2");
+      }
+    }
     const raw = localStorage.getItem(TRAINEE_ASSESSMENTS_KEY);
     if (!raw) {
       localStorage.setItem(TRAINEE_ASSESSMENTS_KEY, JSON.stringify(initialSeededAssessments));
@@ -346,4 +161,9 @@ export const exportAssessmentReportToCsv = (): string => {
   ]);
 
   return [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+};
+
+// Padam semua rekod penilaian
+export const clearAllTraineeAssessments = (): void => {
+  saveTraineeAssessmentsMap({});
 };

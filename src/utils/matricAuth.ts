@@ -1,7 +1,7 @@
 import { RegisteredTrainee, MatricAuthSession } from '../types';
 import { getStoredProfile, saveProfile } from './storage';
 
-const REGISTERED_TRAINEES_KEY = 'gcmt2052_registered_trainees_v2';
+const REGISTERED_TRAINEES_KEY = 'gcmt2052_registered_trainees_v3';
 const MATRIC_SESSION_KEY = 'gcmt2052_matric_session_v2';
 const OWNER_PASSWORD_KEY = 'gcmt2052_owner_password_v2';
 
@@ -80,451 +80,41 @@ export const isNameMatching = (inputName: string, officialName: string): boolean
   return simplify(n1) === simplify(n2);
 };
 
-// Senarai rasmi 42 orang pelatih ILKKM Sungai Buloh bagi kursus GCMT 2052
-export const defaultRegisteredTrainees: RegisteredTrainee[] = [
-  {
-    icNumber: '050114-10-1023',
-    fullName: 'MUHAMMAD AMIRUL AIMAN BIN ZULKIFLI',
-    matricNumber: 'DPF/2026/001',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050218-14-5210',
-    fullName: 'NUR FARISHA BINTI MOHD FAIZAL',
-    matricNumber: 'DPF/2026/002',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050309-10-6421',
-    fullName: 'MUHAMMAD DANIAL BIN MOHD ROSLI',
-    matricNumber: 'DPF/2026/003',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050412-08-3318',
-    fullName: 'SITI NURHALIZA BINTI KAMARUDDIN',
-    matricNumber: 'DPF/2026/004',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050523-10-7791',
-    fullName: 'AHMAD FAIZ BIN KHAIRUL AZMAN',
-    matricNumber: 'DPF/2026/005',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050604-01-2184',
-    fullName: 'NUR AINA NATASHA BINTI AHMAD',
-    matricNumber: 'DPF/2026/006',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050719-14-4902',
-    fullName: 'WAN AISHAH BINTI WAN ZAKI',
-    matricNumber: 'DPF/2026/007',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050808-10-1135',
-    fullName: 'MOHAMAD FARHAN BIN ABDULLAH',
-    matricNumber: 'DPF/2026/008',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050915-08-6624',
-    fullName: 'NURUL IZZAH BINTI ISMAIL',
-    matricNumber: 'DPF/2026/009',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '051022-10-8913',
-    fullName: 'MUHAMMAD HARITH BIN NORAZMAN',
-    matricNumber: 'DPF/2026/010',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '051105-03-3450',
-    fullName: 'NURUL SYAFIQAH BINTI ZAINAL',
-    matricNumber: 'DPF/2026/011',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '051211-10-7649',
-    fullName: 'KHAIRUL ANUAR BIN MD NOR',
-    matricNumber: 'DPF/2026/012',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050125-14-6012',
-    fullName: 'NURUL HUDA BINTI ABDUL HALIM',
-    matricNumber: 'DPF/2026/013',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050203-08-8121',
-    fullName: 'MUHAMMAD AFIQ BIN RUSLI',
-    matricNumber: 'DPF/2026/014',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050319-10-5340',
-    fullName: 'FATIN NABILAH BINTI HASNOL',
-    matricNumber: 'DPF/2026/015',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050428-02-1277',
-    fullName: 'AMIRAH HUSNA BINTI SHAMSUL',
-    matricNumber: 'DPF/2026/016',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050516-10-9083',
-    fullName: 'MUHAMMAD LUQMAN HAKIM BIN RADZI',
-    matricNumber: 'DPF/2026/017',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050629-14-3516',
-    fullName: 'ANIS SYAZWANI BINTI AZHAR',
-    matricNumber: 'DPF/2026/018',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050702-08-4425',
-    fullName: 'DANISH IRFAN BIN ZAHARIN',
-    matricNumber: 'DPF/2026/019',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050824-10-7098',
-    fullName: 'NUR ALYA MAISARAH BINTI YUSOF',
-    matricNumber: 'DPF/2026/020',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050911-01-1823',
-    fullName: 'MUHAMMAD ADIB BIN SAIFUL',
-    matricNumber: 'DPF/2026/021',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '051017-14-5542',
-    fullName: 'SYAZANA BINTI KAMAL ARIFFIN',
-    matricNumber: 'DPF/2026/022',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '051128-10-8201',
-    fullName: 'NURIN JAZLINA BINTI HISHAM',
-    matricNumber: 'DPF/2026/023',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '051204-08-2990',
-    fullName: 'MUHAMMAD SYAFIQ BIN BAHARUDDIN',
-    matricNumber: 'DPF/2026/024',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050108-10-4137',
-    fullName: 'NUR ZULAIKHA BINTI CHE MAT',
-    matricNumber: 'DPF/2026/025',
-    programme: 'Diploma Farmasi',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050221-14-6789',
-    fullName: 'MUHAMMAD ADAM HAIKAL BIN MUSA',
-    matricNumber: 'DPKP/2026/001',
-    programme: 'Diploma Kesihatan Persekitaran',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050314-08-1204',
-    fullName: 'NURUL ATIQAH BINTI MOHD SHUKRI',
-    matricNumber: 'DPKP/2026/002',
-    programme: 'Diploma Kesihatan Persekitaran',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050406-10-8531',
-    fullName: 'MUHAMMAD NAJMI BIN ABDUL RAHMAN',
-    matricNumber: 'DPKP/2026/003',
-    programme: 'Diploma Kesihatan Persekitaran',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050518-06-3912',
-    fullName: 'NUR DIANA BINTI ZAMRI',
-    matricNumber: 'DPKP/2026/004',
-    programme: 'Diploma Kesihatan Persekitaran',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050630-10-6725',
-    fullName: 'SYED AIMAN BIN SYED OTHMAN',
-    matricNumber: 'DPKP/2026/005',
-    programme: 'Diploma Kesihatan Persekitaran',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050715-14-9840',
-    fullName: 'INTAN NUR SYUHADA BINTI AZIZ',
-    matricNumber: 'DPKP/2026/006',
-    programme: 'Diploma Kesihatan Persekitaran',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050810-08-3397',
-    fullName: 'MUHAMMAD HAZIQ BIN AZIZI',
-    matricNumber: 'DPKP/2026/007',
-    programme: 'Diploma Kesihatan Persekitaran',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050903-10-5118',
-    fullName: 'NUR QISTINA BINTI KHALID',
-    matricNumber: 'DPKP/2026/008',
-    programme: 'Diploma Kesihatan Persekitaran',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '051029-01-7243',
-    fullName: 'FARIS DANIAL BIN KASIM',
-    matricNumber: 'DPKP/2026/009',
-    programme: 'Diploma Kesihatan Persekitaran',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '051112-14-8896',
-    fullName: 'NUR AMALINA BINTI MAHMUD',
-    matricNumber: 'DPKP/2026/010',
-    programme: 'Diploma Kesihatan Persekitaran',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '051227-10-4051',
-    fullName: 'MUHAMMAD ZULHILMI BIN HASSAN',
-    matricNumber: 'DPKP/2026/011',
-    programme: 'Diploma Kesihatan Persekitaran',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050119-08-6174',
-    fullName: 'NURUL JANNAH BINTI SUHAIMI',
-    matricNumber: 'DPKP/2026/012',
-    programme: 'Diploma Kesihatan Persekitaran',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050209-10-9225',
-    fullName: 'AIDIL ZAFRAN BIN RAMLI',
-    matricNumber: 'DPKP/2026/013',
-    programme: 'Diploma Kesihatan Persekitaran',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050327-14-3862',
-    fullName: 'SITI AISYAH BINTI BADRUL',
-    matricNumber: 'DPKP/2026/014',
-    programme: 'Diploma Kesihatan Persekitaran',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050415-08-7519',
-    fullName: 'MUHAMMAD ILHAM BIN JAAFAR',
-    matricNumber: 'DPKP/2026/015',
-    programme: 'Diploma Kesihatan Persekitaran',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050508-10-2340',
-    fullName: 'NUR SYAZA NADIA BINTI RAZALI',
-    matricNumber: 'DPKP/2026/016',
-    programme: 'Diploma Kesihatan Persekitaran',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-  {
-    icNumber: '050617-14-4823',
-    fullName: 'MEGAT AMIRUL BIN MEGAT SHUKRI',
-    matricNumber: 'DPKP/2026/017',
-    programme: 'Diploma Kesihatan Persekitaran',
-    institution: OFFICIAL_INSTITUTION_NAME,
-    cohort: 'Sesi 2026/2027',
-    registrationDate: '2026-01-05',
-    status: 'Aktif',
-  },
-];
+// Senarai pelatih berdaftar bermula kosong (pengajar akan memasukkan nama pelatih berdaftar)
+export const defaultRegisteredTrainees: RegisteredTrainee[] = [];
 
-// Dapatkan senarai pelatih berdaftar (42 pelatih)
+// Dapatkan senarai pelatih berdaftar
 export const getRegisteredTrainees = (): RegisteredTrainee[] => {
   try {
+    if (typeof window !== "undefined") {
+      if (localStorage.getItem("gcmt2052_registered_trainees_v2")) {
+        localStorage.removeItem("gcmt2052_registered_trainees_v2");
+      }
+    }
     const raw = localStorage.getItem(REGISTERED_TRAINEES_KEY);
     if (!raw) {
-      localStorage.setItem(REGISTERED_TRAINEES_KEY, JSON.stringify(defaultRegisteredTrainees));
-      return defaultRegisteredTrainees;
+      localStorage.setItem(REGISTERED_TRAINEES_KEY, JSON.stringify([]));
+      return [];
     }
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      localStorage.setItem(REGISTERED_TRAINEES_KEY, JSON.stringify(defaultRegisteredTrainees));
-      return defaultRegisteredTrainees;
+    if (!Array.isArray(parsed)) {
+      localStorage.setItem(REGISTERED_TRAINEES_KEY, JSON.stringify([]));
+      return [];
     }
     return parsed;
   } catch (e) {
-    console.error('Error fetching registered trainees', e);
-    return defaultRegisteredTrainees;
+    console.error("Error fetching registered trainees", e);
+    return [];
   }
 };
 
-// Simpan senarai pelatih
+// Padam semua senarai nama pelatih yang terdapat dalam sistem
+export const clearAllRegisteredTrainees = (): { success: boolean; message: string } => {
+  saveRegisteredTrainees([]);
+  logoutMatricSession();
+  return { success: true, message: "Semua senarai pelatih dalam sistem telah berjaya dipadamkan." };
+};
+
 export const saveRegisteredTrainees = (list: RegisteredTrainee[]): void => {
   localStorage.setItem(REGISTERED_TRAINEES_KEY, JSON.stringify(list));
 };
@@ -593,7 +183,7 @@ export const verifyAndLoginTrainee = (
   if (!matchedByIc) {
     return {
       success: false,
-      message: `Akses Ditolak: Nombor Kad Pengenalan "${icInput}" tidak dijumpai dalam senarai 42 pelatih rasmi ILKKM Sungai Buloh. Hanya 42 pelatih berdaftar sesi ini dibenarkan mengakses soalan GCMT 2052.`,
+      message: `Akses Ditolak: Nombor Kad Pengenalan "${icInput}" tidak dijumpai dalam senarai pelatih berdaftar rasmi ILKKM Sungai Buloh. Sila pastikan pengajar telah mendaftarkan maklumat anda.`,
     };
   }
 
@@ -688,7 +278,7 @@ export const verifyAndLoginMatric = (
 
   return {
     success: false,
-    message: `Akses Ditolak: Maklumat pengenalan "${matricOrIcInput}" tidak dijumpai dalam daftar 42 pelatih ILKKM Sungai Buloh.`,
+    message: `Akses Ditolak: Maklumat pengenalan "${matricOrIcInput}" tidak dijumpai dalam daftar pelatih berdaftar ILKKM Sungai Buloh.`,
   };
 };
 
@@ -1026,9 +616,9 @@ export const exportTraineesToCsv = (): string => {
   return [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
 };
 
-// Tetapkan semula ke 42 orang pelatih lalai ILKKM Sungai Buloh
+// Kosongkan senarai pelatih atau tetapkan semula
 export const resetRegisteredTraineesToDefault = (): void => {
-  localStorage.setItem(REGISTERED_TRAINEES_KEY, JSON.stringify(defaultRegisteredTrainees));
+  localStorage.setItem(REGISTERED_TRAINEES_KEY, JSON.stringify([]));
 };
 
 // Log keluar sesi sepenuhnya dan bersihkan data profil aktif
