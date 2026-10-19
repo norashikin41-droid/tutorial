@@ -602,7 +602,7 @@ export const MatricAuthModal: React.FC<MatricAuthModalProps> = ({
                         type="text"
                         value={studentIc}
                         onChange={(e) => setStudentIc(e.target.value)}
-                        placeholder="cth: 050114-10-1023 atau 050114101023"
+                        placeholder="cth: 060413-06-0031 atau 060413060031"
                         className="w-full px-4 py-3 rounded-2xl border-2 border-[#D0D0C0] bg-white text-sm font-mono font-bold text-[#33422C] focus:outline-none focus:border-[#495E3F] focus:ring-2 focus:ring-[#A3AD94]/40 placeholder:text-gray-400"
                         required
                         autoFocus
@@ -619,7 +619,7 @@ export const MatricAuthModal: React.FC<MatricAuthModalProps> = ({
                         type="text"
                         value={studentName}
                         onChange={(e) => setStudentName(e.target.value)}
-                        placeholder="cth: MUHAMMAD AMIRUL AIMAN BIN ZULKIFLI"
+                        placeholder="cth: MUHAMMAD AFIQ IRFAN BIN AZMI"
                         className="w-full px-4 py-3 rounded-2xl border-2 border-[#D0D0C0] bg-white text-sm font-bold text-[#33422C] focus:outline-none focus:border-[#495E3F] focus:ring-2 focus:ring-[#A3AD94]/40 placeholder:text-gray-400 uppercase"
                         required
                       />
@@ -1309,7 +1309,7 @@ export const MatricAuthModal: React.FC<MatricAuthModalProps> = ({
                           rows={4}
                           value={rawCsvText}
                           onChange={(e) => setRawCsvText(e.target.value)}
-                          placeholder="No. Kad Pengenalan, Nama Penuh, Program&#10;050114-10-1023, MUHAMMAD AMIRUL AIMAN, Diploma Farmasi"
+                          placeholder="No. Kad Pengenalan, Nama Penuh, Program&#10;060413-06-0031, MUHAMMAD AFIQ IRFAN BIN AZMI, Diploma Farmasi"
                           className="w-full p-3 rounded-xl border-2 border-[#D0D0C0] bg-white font-mono text-xs focus:outline-none focus:border-[#495E3F]"
                         />
 

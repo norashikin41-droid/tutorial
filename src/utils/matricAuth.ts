@@ -1,7 +1,7 @@
 import { RegisteredTrainee, MatricAuthSession } from '../types';
 import { getStoredProfile, saveProfile } from './storage';
 
-const REGISTERED_TRAINEES_KEY = 'gcmt2052_registered_trainees_v3';
+const REGISTERED_TRAINEES_KEY = 'gcmt2052_registered_trainees_v4';
 const MATRIC_SESSION_KEY = 'gcmt2052_matric_session_v2';
 const OWNER_PASSWORD_KEY = 'gcmt2052_owner_password_v2';
 
@@ -77,11 +77,438 @@ export const isNameMatching = (inputName: string, officialName: string): boolean
       .replace(/\bANAK PEREMPUAN\b/g, 'AP')
       .replace(/[^A-Z]/g, '');
 
-  return simplify(n1) === simplify(n2);
+  const s1 = simplify(n1);
+  const s2 = simplify(n2);
+  if (s1 === s2) return true;
+  if (s1.length >= 6 && s2.length >= 6 && (s1.startsWith(s2) || s2.startsWith(s1))) {
+    return true;
+  }
+  return false;
 };
 
-// Senarai pelatih berdaftar bermula kosong (pengajar akan memasukkan nama pelatih berdaftar)
-export const defaultRegisteredTrainees: RegisteredTrainee[] = [];
+// Senarai rasmi 42 orang pelatih Diploma Farmasi ILKKM Sungai Buloh Sesi 2026/2027
+export const defaultRegisteredTrainees: RegisteredTrainee[] = [
+  {
+    "icNumber": "060413-06-0031",
+    "fullName": "MUHAMMAD AFIQ IRFAN BIN AZMI",
+    "matricNumber": "DPF/2026/001",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "070907-12-0718",
+    "fullName": "STEPHANIE YONG XIU LENG",
+    "matricNumber": "DPF/2026/002",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "020905-13-1493",
+    "fullName": "MUHAMMAD SYAZWAN BIN AYUP",
+    "matricNumber": "DPF/2026/003",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "071208-12-0852",
+    "fullName": "NUR ASLIANA BINTI ALIAS",
+    "matricNumber": "DPF/2026/004",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "041114-01-1164",
+    "fullName": "NUR AIN BINTI HAMDI",
+    "matricNumber": "DPF/2026/005",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "070330-12-0245",
+    "fullName": "ADAM IMMANUEL HERMAN",
+    "matricNumber": "DPF/2026/006",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "071007-01-1342",
+    "fullName": "HUZAIFAH AISHAH BINTI ABDULLAH",
+    "matricNumber": "DPF/2026/007",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "070923-12-1171",
+    "fullName": "RYNDY JULIM",
+    "matricNumber": "DPF/2026/008",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "070206-13-0956",
+    "fullName": "ALVERIENE ANGEL TELUN",
+    "matricNumber": "DPF/2026/009",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "070121-13-1044",
+    "fullName": "ARABELLA ANAK BETI",
+    "matricNumber": "DPF/2026/010",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "071222-12-0074",
+    "fullName": "CHRISTY RENIE ANAK REGA",
+    "matricNumber": "DPF/2026/011",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "060519-12-0602",
+    "fullName": "NURUL KHALIDDAH BINTI BADRULHISHAM",
+    "matricNumber": "DPF/2026/012",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "030714-01-1770",
+    "fullName": "NUR IRDINA DANIA NOR AZMAN",
+    "matricNumber": "DPF/2026/013",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "061215-14-0078",
+    "fullName": "AINUR QISTINA BINTI AL-FEIZURY",
+    "matricNumber": "DPF/2026/014",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "070803-12-0297",
+    "fullName": "AARON XAVIER EDWARD",
+    "matricNumber": "DPF/2026/015",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "050622-12-0310",
+    "fullName": "NUR ATIRAH BINTI JARITO",
+    "matricNumber": "DPF/2026/016",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "050928-12-0866",
+    "fullName": "FLORENCE MARIE NAGIE",
+    "matricNumber": "DPF/2026/017",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "060326-14-0084",
+    "fullName": "DOROTHY ELSA ANAK AJAK",
+    "matricNumber": "DPF/2026/018",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "070614-13-0074",
+    "fullName": "GLEONA RURAN ANAK STEPHEN",
+    "matricNumber": "DPF/2026/019",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "070214-12-0432",
+    "fullName": "VEA LEONNA JOANIS",
+    "matricNumber": "DPF/2026/020",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "070430-12-0242",
+    "fullName": "EZERANA BALUNSING",
+    "matricNumber": "DPF/2026/021",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "060908-04-0120",
+    "fullName": "NUR ZAHIRAH ASYIQIN BINTI MOHD YAZM",
+    "matricNumber": "DPF/2026/022",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "060331-12-0790",
+    "fullName": "NUR IFFAH NAQIBAH BINTI ROSLAND",
+    "matricNumber": "DPF/2026/023",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "070215-06-0048",
+    "fullName": "RABIATUL NAJIHAH BINTI RAHIM AHMAD",
+    "matricNumber": "DPF/2026/024",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "060812-12-1727",
+    "fullName": "MOHAMMAD NURKHUZAIMI BIN JUSIPAL",
+    "matricNumber": "DPF/2026/025",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "010826-12-1052",
+    "fullName": "SITI AISYAH",
+    "matricNumber": "DPF/2026/026",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "030305-06-0571",
+    "fullName": "MUHAMMAD DANISH QUYYUM BIN AHMA",
+    "matricNumber": "DPF/2026/027",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "040214-06-0938",
+    "fullName": "NURAINA WAHEDA BINTI ROZALI",
+    "matricNumber": "DPF/2026/028",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "070722-12-0658",
+    "fullName": "IZARIA IZRIN BINTI KUNG HO@JOHN",
+    "matricNumber": "DPF/2026/029",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "020908-13-0912",
+    "fullName": "CLAYRIEY CHRISTY ANAK MINGGU",
+    "matricNumber": "DPF/2026/030",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "070518-12-0706",
+    "fullName": "SHARLEY YUKI FORD",
+    "matricNumber": "DPF/2026/031",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "070727-13-0521",
+    "fullName": "STEVEN PHILIP MUSEH ANAK KLAMBU",
+    "matricNumber": "DPF/2026/032",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "070904-06-0289",
+    "fullName": "MUHAMMAD HANIF HAIKAL BIN AHMAD S",
+    "matricNumber": "DPF/2026/033",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "060620-12-0260",
+    "fullName": "EZZA NADDIATUL SOLEHAH BINTI SAIR",
+    "matricNumber": "DPF/2026/034",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "071125-13-0422",
+    "fullName": "LORALEE DERFEINN ANAK WIFRED RIZAN",
+    "matricNumber": "DPF/2026/035",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "070709-12-0952",
+    "fullName": "AVY LEONA JEDRIE",
+    "matricNumber": "DPF/2026/036",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "071225-12-0184",
+    "fullName": "ALDAYANA BALQIS BINTI SUARDI",
+    "matricNumber": "DPF/2026/037",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "071227-13-0722",
+    "fullName": "ELEANORA LIAH ANAK HENRY",
+    "matricNumber": "DPF/2026/038",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "061110-12-0206",
+    "fullName": "HAZEL GILLIAN DONNY SIPAYANG",
+    "matricNumber": "DPF/2026/039",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "040318-06-0326",
+    "fullName": "NURUL AININ SOFIYA BINTI KHAIRUL AZMA",
+    "matricNumber": "DPF/2026/040",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "070319-12-0834",
+    "fullName": "ANGELA SHERLYN JOHNNY",
+    "matricNumber": "DPF/2026/041",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  },
+  {
+    "icNumber": "070312-13-0538",
+    "fullName": "VALERIE LIAW",
+    "matricNumber": "DPF/2026/042",
+    "programme": "Diploma Farmasi",
+    "institution": "ILKKM Sungai Buloh",
+    "cohort": "Sesi 2026/2027",
+    "registrationDate": "2026-01-10",
+    "status": "Aktif"
+  }
+];
 
 // Dapatkan senarai pelatih berdaftar
 export const getRegisteredTrainees = (): RegisteredTrainee[] => {
@@ -90,21 +517,24 @@ export const getRegisteredTrainees = (): RegisteredTrainee[] => {
       if (localStorage.getItem("gcmt2052_registered_trainees_v2")) {
         localStorage.removeItem("gcmt2052_registered_trainees_v2");
       }
+      if (localStorage.getItem("gcmt2052_registered_trainees_v3")) {
+        localStorage.removeItem("gcmt2052_registered_trainees_v3");
+      }
     }
     const raw = localStorage.getItem(REGISTERED_TRAINEES_KEY);
     if (!raw) {
-      localStorage.setItem(REGISTERED_TRAINEES_KEY, JSON.stringify([]));
-      return [];
+      localStorage.setItem(REGISTERED_TRAINEES_KEY, JSON.stringify(defaultRegisteredTrainees));
+      return defaultRegisteredTrainees;
     }
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      localStorage.setItem(REGISTERED_TRAINEES_KEY, JSON.stringify([]));
-      return [];
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      localStorage.setItem(REGISTERED_TRAINEES_KEY, JSON.stringify(defaultRegisteredTrainees));
+      return defaultRegisteredTrainees;
     }
     return parsed;
   } catch (e) {
     console.error("Error fetching registered trainees", e);
-    return [];
+    return defaultRegisteredTrainees;
   }
 };
 

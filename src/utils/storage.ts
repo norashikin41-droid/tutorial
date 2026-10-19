@@ -6,10 +6,10 @@ const BOOKMARKS_KEY = 'gcmt2052_bookmarked_questions';
 const REMINDER_KEY = 'gcmt2052_reminder_settings';
 
 const defaultProfile: UserProfile = {
-  name: 'MUHAMMAD AMIRUL AIMAN BIN ZULKIFLI',
-  matricNumber: 'GCMT/2026/0482',
+  name: 'Pelatih GCMT 2052',
+  matricNumber: '',
   institution: 'Institut Latihan Kementerian Kesihatan Malaysia Sungai Buloh',
-  programme: 'Sains Kesihatan / Farmasi / Kesihatan Persekitaran',
+  programme: 'Diploma Farmasi',
   targetScore: 85,
   dailyGoalQuestions: 15,
   streakDays: 1,
